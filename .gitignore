@@ -1,2 +1,4 @@
 *.class
 *.json
+.idea/
+github-user-activity.iml
