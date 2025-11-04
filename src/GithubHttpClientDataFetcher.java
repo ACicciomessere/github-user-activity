@@ -15,8 +15,22 @@ public class GithubHttpClientDataFetcher implements GithubDataFetcher {
     @Override
     public JSONArray fetchAllEvent(String url) throws Exception {
         // Verify in the cache
-        GithubCacheManager githubCacheManager = new GithubCacheManager(55555);
-        githubCacheManager.startServices();
+        int cachePort = 55555;
+        String redisPortEnv = System.getenv("REDIS_PORT");
+        if (redisPortEnv != null && !redisPortEnv.isBlank()) {
+            try {
+                cachePort = Integer.parseInt(redisPortEnv);
+            } catch (NumberFormatException e) {
+                System.err.println("REDIS_PORT inválido, usando 55555");
+            }
+        }
+
+        GithubCacheManager githubCacheManager = new GithubCacheManager(cachePort);
+        try {
+            githubCacheManager.startServices();
+        } catch (IOException e) {
+            System.err.println("No se pudo iniciar Redis embebido: " + e.getMessage());
+        }
 
         String value = githubCacheManager.getFromCache(url);
         if (value != null) {

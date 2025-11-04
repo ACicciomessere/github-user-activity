@@ -20,7 +20,7 @@ Hi. This is a Java CLi app to fetch github user activity.
 2. Compile the source code:
 
 ```bash
-    javac --module-path lib --add-modules org.json src/*.java src/model/*.java -d bin
+    javac -cp "lib/*" src/*.java src/model/*.java -d bin
 ```
 
 3. run
@@ -28,13 +28,17 @@ Hi. This is a Java CLi app to fetch github user activity.
 ```bash
 cd bin
 # Display activities of a user
-java --module-path ../lib --add-modules org.json  App <username>
-# ex: java --module-path ../lib --add-modules org.json  App ruxlsr
+java -cp "../bin:../lib/*" App <username>
+# ex: java -cp "../bin:../lib/*" App ruxlsr
 # or
 # Display activity with filter
-java --module-path ../lib --add-modules org.json  App <username> [EventType]
-# ex: java --module-path ../lib --add-modules org.json  App ruxlsr PushEvent
+java -cp "../bin:../lib/*" App <username> [EventType]
+# ex: java -cp "../bin:../lib/*" App ruxlsr PushEvent
 ```
+
+> En Windows reemplaza `:` por `;` dentro de las rutas de classpath.
+
+Si ya tienes un servidor Redis en ejecución, exporta la variable `REDIS_PORT` con el puerto correspondiente antes de ejecutar la aplicación (por defecto se usa `55555`).
 
 **Nb:** _all event type are supported_. Refers to [github Event Type](https://docs.github.com/en/rest/using-the-rest-api/github-event-types?apiVersion=2022-11-28)
 

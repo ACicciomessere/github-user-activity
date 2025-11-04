@@ -32,68 +32,101 @@ public class DataFormater {
     }
 
     private static void eventPrinter(JSONObject event){
-            JSONObject eventPayLoad = event.getJSONObject("payload");
-            String repoName = event.getJSONObject("repo").getString("name");
-            String createdAt = event.getString("created_at");
-    
-            switch (event.getString("type")) {
-                case "PushEvent" -> {
-                    System.out.println(createdAt+":: Pushed "+eventPayLoad.getInt("distinct_size")+" commit(s) to "+repoName);
+        JSONObject payload = event.optJSONObject("payload");
+        JSONObject repo = event.optJSONObject("repo");
+
+        String repoName = repo != null ? repo.optString("name", "unknown repo") : "unknown repo";
+        String createdAt = event.optString("created_at", "");
+        String type = event.optString("type", "");
+
+        switch (type) {
+            case "PushEvent" -> {
+                int commits = 0;
+                if (payload != null) {
+                    commits = payload.optInt("distinct_size", 0);
+                    if (commits == 0) {
+                        JSONArray commitsArray = payload.optJSONArray("commits");
+                        commits = commitsArray != null ? commitsArray.length() : 0;
+                    }
                 }
-                case "CreateEvent"->{
-                    System.out.println(createdAt+":: created a "+eventPayLoad.getString("ref_type")+" to "+repoName);
+                System.out.println(createdAt+":: Pushed "+commits+" commit(s) to "+repoName);
+            }
+            case "CreateEvent" -> {
+                String refType = payload != null ? payload.optString("ref_type", "resource") : "resource";
+                System.out.println(createdAt+":: created a "+refType+" on "+repoName);
+            }
+            case "CommitCommentEvent" -> {
+                System.out.println(createdAt+":: Commented on a commit in "+repoName);
+            }
+            case "DeleteEvent" -> {
+                String refType = payload != null ? payload.optString("ref_type", "resource") : "resource";
+                System.out.println(createdAt+":: deleted a "+refType+" on "+repoName);
+            }
+            case "ForkEvent" -> {
+                System.out.println(createdAt+":: Forked "+repoName);
+            }
+            case "WatchEvent" -> {
+                System.out.println(createdAt+":: Starred "+repoName);
+            }
+            case "GollumEvent" -> {
+                if (payload != null) {
+                    JSONArray pages = payload.optJSONArray("pages");
+                    if (pages != null && pages.length() > 0) {
+                        JSONObject page = pages.optJSONObject(0);
+                        if (page != null) {
+                            String action = page.optString("action", "updated");
+                            String pageName = page.optString("page_name", "wiki page");
+                            System.out.println(createdAt+":: "+action+" --"+pageName+"-- wiki page on "+repoName);
+                            return;
+                        }
+                    }
                 }
-                case "CommitCommentEvent"->{
-                    System.out.println(createdAt+":: Comment a commit on "+repoName);
-                }
-                case "DeleteEvent"->{
-                    System.out.println(createdAt+":: deleted a "+eventPayLoad.getString("ref_type")+" to "+repoName);
-                }
-                case "ForkEvent"->{
-                    System.out.println(createdAt+":: Forked "+repoName);
-                }
-                case "WatchEvent" -> {
-                    System.out.println(createdAt+":: Stared "+repoName);
-                }
-                case "GollumEvent"->{
-                    JSONObject page = eventPayLoad.getJSONArray("page").getJSONObject(0);   
-                    System.out.println(createdAt+":: "+page.getString("action")+" --"+page.getString("page_name")+"-- wiki page to "+repoName);
-                }
-                case "IssueCommentEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" a comment on the issues --"+eventPayLoad.getJSONObject("issue").getString("title")+"-- on"+repoName);
-                }
-                case "IssuesEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" the issue --"+eventPayLoad.getJSONObject("issue").getString("title")+"-- on"+repoName);
-                }
-                case "MemberEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" a member on +"+repoName);
-                }
-                case "PublicEvent"->{
-                    System.out.println(createdAt+":: Made --"+repoName+"-- public 🥳🥳🥳");
-                }
-                case "PullRequestReviewEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" a pull request review on "+repoName);
-                }
-                case "PullRequestReviewCommentEvent"->{
-                    System.out.println(createdAt+":: Commented a pull request review on "+repoName);
-                }
-                case "PullRequestReviewThreadEvent"->{
-                    System.out.println(createdAt+":: Mark a thread as "+eventPayLoad.getString("action")+" on "+repoName);
-                }
-                case "PullRequestEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" a pull request on"+repoName);
-                }
-                case "ReleaseEvent" -> {
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" a release on "+repoName);
-                }
-                case "SponsorshipEvent"->{
-                    System.out.println(createdAt+":: "+eventPayLoad.getString("action")+" Sponsorship action on "+repoName);
-                }
-                                
-                default->{
-                    System.err.println("argument not recognized => "+event.getString("type"));
-                }
+                System.out.println(createdAt+":: updated wiki content on "+repoName);
+            }
+            case "IssueCommentEvent" -> {
+                String action = payload != null ? payload.optString("action", "performed") : "performed";
+                String title = payload != null && payload.optJSONObject("issue") != null ? payload.optJSONObject("issue").optString("title", "issue") : "issue";
+                System.out.println(createdAt+":: "+action+" a comment on --"+title+"-- in "+repoName);
+            }
+            case "IssuesEvent" -> {
+                String action = payload != null ? payload.optString("action", "acted on") : "acted on";
+                String title = payload != null && payload.optJSONObject("issue") != null ? payload.optJSONObject("issue").optString("title", "issue") : "issue";
+                System.out.println(createdAt+":: "+action+" the issue --"+title+"-- in "+repoName);
+            }
+            case "MemberEvent" -> {
+                String action = payload != null ? payload.optString("action", "updated") : "updated";
+                System.out.println(createdAt+":: "+action+" a member in "+repoName);
+            }
+            case "PublicEvent" -> {
+                System.out.println(createdAt+":: Made --"+repoName+"-- public 🥳🥳🥳");
+            }
+            case "PullRequestReviewEvent" -> {
+                String action = payload != null ? payload.optString("action", "acted on") : "acted on";
+                System.out.println(createdAt+":: "+action+" a pull request review on "+repoName);
+            }
+            case "PullRequestReviewCommentEvent" -> {
+                System.out.println(createdAt+":: Commented on a pull request review in "+repoName);
+            }
+            case "PullRequestReviewThreadEvent" -> {
+                String action = payload != null ? payload.optString("action", "updated") : "updated";
+                System.out.println(createdAt+":: Marked a thread as "+action+" on "+repoName);
+            }
+            case "PullRequestEvent" -> {
+                String action = payload != null ? payload.optString("action", "acted on") : "acted on";
+                System.out.println(createdAt+":: "+action+" a pull request in "+repoName);
+            }
+            case "ReleaseEvent" -> {
+                String action = payload != null ? payload.optString("action", "updated") : "updated";
+                System.out.println(createdAt+":: "+action+" a release in "+repoName);
+            }
+            case "SponsorshipEvent" -> {
+                String action = payload != null ? payload.optString("action", "performed") : "performed";
+                System.out.println(createdAt+":: "+action+" a sponsorship action in "+repoName);
+            }
+            default -> {
+                System.out.println(createdAt+":: " + type + " event on " + repoName);
             }
         }
+    }
       
 }

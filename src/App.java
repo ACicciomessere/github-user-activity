@@ -22,7 +22,7 @@ public class App {
             else
                 DataFormater.eventsDisplayer(events);
         } catch (Exception e) {
-            System.out.println("Error: " + e.getCause());
+            System.err.println("Error: " + e.getMessage());
         }
     }
 }

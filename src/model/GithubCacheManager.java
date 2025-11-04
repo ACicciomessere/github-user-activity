@@ -8,9 +8,10 @@ import redis.embedded.RedisServer;
 import redis.embedded.core.RedisServerBuilder;
 
 public class GithubCacheManager {
-    int port;
-    RedisServer redisServer;
-    Jedis jedis;
+    private final int port;
+    private final Jedis jedis;
+    private final boolean usingEmbedded;
+    private RedisServer redisServer;
 
     public GithubCacheManager(int port) {
         this.port = port;
@@ -20,18 +21,36 @@ public class GithubCacheManager {
             dir.mkdirs();
         }
 
-        redisServer = new RedisServerBuilder()
-                .setting("save 1 100")
-                .setting("appendonly yes")
-                .setting("dir /tmp/redis")
-                .port(port)
-                .build();
+        boolean externalRedisAvailable = isRedisRunning(port);
+        if (!externalRedisAvailable) {
+            redisServer = new RedisServerBuilder()
+                    .setting("save 1 100")
+                    .setting("appendonly yes")
+                    .setting("dir /tmp/redis")
+                    .port(port)
+                    .build();
+        }
 
+        usingEmbedded = !externalRedisAvailable;
         jedis = new Jedis("localhost", port);
     }
 
+    private boolean isRedisRunning(int port) {
+        try (Jedis testConn = new Jedis("localhost", port)) {
+            return "PONG".equalsIgnoreCase(testConn.ping());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void startServices() throws IOException {
-        this.redisServer.start();
+        if (usingEmbedded && this.redisServer != null && !this.redisServer.isActive()) {
+            try {
+                this.redisServer.start();
+            } catch (RuntimeException e) {
+                throw new IOException("No se pudo iniciar Redis embebido", e);
+            }
+        }
     }
 
     public void storeCache(String key, String value) {
@@ -69,6 +88,8 @@ public class GithubCacheManager {
 
     public void stopServices() throws IOException {
         this.jedis.close();
-        this.redisServer.stop();
+        if (usingEmbedded && this.redisServer != null && this.redisServer.isActive()) {
+            this.redisServer.stop();
+        }
     }
 }
