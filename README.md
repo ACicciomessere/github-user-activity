@@ -26,13 +26,12 @@ Hi. This is a Java CLi app to fetch github user activity.
 3. run
 
 ```bash
-cd bin
 # Display activities of a user
-java -cp "../bin:../lib/*" App <username>
+java -cp "bin:lib/*" App <username>
 # ex: java -cp "../bin:../lib/*" App ruxlsr
 # or
 # Display activity with filter
-java -cp "../bin:../lib/*" App <username> [EventType]
+java -cp "bin:lib/*" App <username> [EventType]
 # ex: java -cp "../bin:../lib/*" App ruxlsr PushEvent
 ```
 
