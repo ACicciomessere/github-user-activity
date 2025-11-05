@@ -1,28 +1,39 @@
-
 import org.json.JSONArray;
 import model.GithubDataFetcher;
 
 public class App {
 
     public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-            System.err.println("no argument passed. Syntax:: github-activity <username> [Eventype]");
+        // Start web server when no args or when explicitly requested
+        if (args.length == 0 || (args.length >= 1 && "server".equalsIgnoreCase(args[0]))) {
+            int port = 8080;
+            if (args.length >= 2) {
+                try { port = Integer.parseInt(args[1]); } catch (NumberFormatException ignore) {}
+            }
+            CommitMonitorServer server = new CommitMonitorServer();
+            server.start(port);
+            // Keep main thread alive
+            Thread.currentThread().join();
             return;
         }
 
-        String apiEndpoint = "https://api.github.com/users/" + args[0] + "/events";
+        if (args.length >= 1) {
+            String apiEndpoint = "https://api.github.com/users/" + args[0] + "/events";
 
-        // System.out.println("the api endpoint: "+apiEndpoint);
-        try {
-            GithubDataFetcher gh = new GithubHttpClientDataFetcher();
-            JSONArray events = gh.fetchAllEvent(apiEndpoint);
+            try {
+                GithubDataFetcher gh = new GithubHttpClientDataFetcher();
+                JSONArray events = gh.fetchAllEvent(apiEndpoint);
 
-            if (args.length == 2 && !args[1].isEmpty())
-                DataFormater.specificEventDisplayer(events, args[1]);
-            else
-                DataFormater.eventsDisplayer(events);
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+                if (args.length == 2 && !args[1].isEmpty())
+                    DataFormater.specificEventDisplayer(events, args[1]);
+                else
+                    DataFormater.eventsDisplayer(events);
+            } catch (Exception e) {
+                System.err.println("Error: " + e.getMessage());
+            }
+            return;
         }
+
+        System.err.println("Usage: java -cp \"bin:lib/*\" App <username> [EventType] | server [port]");
     }
 }
