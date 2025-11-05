@@ -128,5 +128,16 @@ public class DataFormater {
             }
         }
     }
-      
+
+    public static void prDisplayer(JSONArray jsonEventsArray){
+        if (jsonEventsArray==null || jsonEventsArray.length() == 0) {
+            System.out.println("the array is empty");
+            return;
+        }
+        
+        for(int i = 0; i < jsonEventsArray.length(); i++){
+            JSONObject event = jsonEventsArray.getJSONObject(i);
+            eventPrinter(event);
+        }
+    }
 }

@@ -17,7 +17,7 @@ public class App {
             return;
         }
 
-        if (args.length >= 1) {
+        if (args.length == 1) {
             String apiEndpoint = "https://api.github.com/users/" + args[0] + "/events";
 
             try {
@@ -33,6 +33,19 @@ public class App {
             }
             return;
         }
+
+        if (args.length == 2) {
+            try {
+                GithubDataFetcher gh = new GithubHttpClientDataFetcher();
+                JSONArray events = gh.fetchPREvents(args[0], args[1]);
+
+                DataFormater.prDisplayer(events);
+            } catch (Exception e) {
+                System.err.println("Error: " + e.getMessage());
+            }
+            return;
+        }
+
 
         System.err.println("Usage: java -cp \"bin:lib/*\" App <username> [EventType] | server [port]");
     }
