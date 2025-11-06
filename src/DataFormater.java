@@ -140,4 +140,42 @@ public class DataFormater {
             eventPrinter(event);
         }
     }
+
+    public static void historicalPRsDisplayer(JSONArray jsonPRsArray){
+        if (jsonPRsArray==null || jsonPRsArray.length() == 0) {
+            System.out.println("the array is empty");
+            return;
+        }
+        
+        for(int i = 0; i < jsonPRsArray.length(); i++){
+            JSONObject pr = jsonPRsArray.getJSONObject(i);
+            historicalPRPrinter(pr);
+        }
+    }
+
+    private static void historicalPRPrinter(JSONObject pr){
+        // Extract required fields
+        String title = pr.optString("title", "No title");
+        String createdAt = pr.optString("created_at", "");
+        String mergedAt = pr.optString("merged_at", "");
+        String state = pr.optString("state", "");
+        int number = pr.optInt("number", 0);
+        
+        // Extract user name
+        String userName = "Unknown user";
+        JSONObject user = pr.optJSONObject("user");
+        if (user != null) {
+            userName = user.optString("login", "Unknown user");
+        }
+        
+        // Format merged_at (can be null)
+        String mergedAtDisplay = mergedAt.isEmpty() || mergedAt.equals("null") ? "Not merged" : mergedAt;
+        
+        // Print formatted information
+        System.out.println("PR #" + number + " | " + state.toUpperCase() + 
+                          " | Title: " + title + 
+                          " | User: " + userName + 
+                          " | Created: " + createdAt + 
+                          " | Merged: " + mergedAtDisplay);
+    }
 }

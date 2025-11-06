@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import model.GithubDataFetcher;
 
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -57,25 +58,115 @@ public class CommitMonitorServer {
 
                 URI uri = exchange.getRequestURI();
                 Map<String, String> query = parseQuery(uri.getRawQuery());
+                String view = query.getOrDefault("view", "commits").trim();
                 String username = query.getOrDefault("user", "").trim();
+                String owner = query.getOrDefault("owner", "").trim();
+                String repo = query.getOrDefault("repo", "").trim();
 
-                if (username.isEmpty()) {
-                    sendHtml(exchange, 200, layout("GitHub Commit Monitor", form("")));
+                if (username.isEmpty() && (owner.isEmpty() || repo.isEmpty())) {
+                    sendHtml(exchange, 200, layout("GitHub Commit Monitor", form("", "", "commits")));
                     return;
                 }
 
+                // Handle PRs historical view
+                if ("prs".equals(view) && !owner.isEmpty() && !repo.isEmpty()) {
+                    JSONArray prs;
+                    try {
+                        GithubDataFetcher gh = new GithubHttpClientDataFetcher();
+                        prs = gh.fetchHistoricalPRs(owner, repo);
+                    } catch (Exception e) {
+                        sendHtml(exchange, 500, layout("Error", errorBox("Failed to fetch PRs: " + html(e.getMessage())) + form(owner, repo, "prs")));
+                        return;
+                    }
+
+                    if (prs == null || prs.length() == 0) {
+                        sendHtml(exchange, 200, layout("No PRs", infoBox("No pull requests found for repository '" + html(owner) + "/" + html(repo) + "'.") + form(owner, repo, "prs")));
+                        return;
+                    }
+
+                    List<Map<String, String>> prRows = new ArrayList<>();
+                    int totalPRs = prs.length();
+                    int openPRs = 0;
+                    int closedPRs = 0;
+                    int mergedPRs = 0;
+
+                    for (int i = 0; i < prs.length(); i++) {
+                        JSONObject pr = prs.optJSONObject(i);
+                        if (pr == null) continue;
+
+                        String state = pr.optString("state", "");
+                        if ("open".equals(state)) openPRs++;
+                        else if ("closed".equals(state)) {
+                            String mergedAt = pr.optString("merged_at", "");
+                            if (!mergedAt.isEmpty() && !mergedAt.equals("null")) {
+                                mergedPRs++;
+                            } else {
+                                closedPRs++;
+                            }
+                        }
+
+                        String title = pr.optString("title", "No title");
+                        String createdAt = pr.optString("created_at", "");
+                        String mergedAt = pr.optString("merged_at", "");
+                        int number = pr.optInt("number", 0);
+                        
+                        String userName = "Unknown user";
+                        JSONObject user = pr.optJSONObject("user");
+                        if (user != null) {
+                            userName = user.optString("login", "Unknown user");
+                        }
+
+                        String createdAtFmt = createdAt;
+                        String mergedAtFmt = mergedAt.isEmpty() || mergedAt.equals("null") ? "Not merged" : mergedAt;
+                        try {
+                            OffsetDateTime odt = OffsetDateTime.parse(createdAt);
+                            createdAtFmt = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss O", Locale.US));
+                            if (!mergedAt.isEmpty() && !mergedAt.equals("null")) {
+                                odt = OffsetDateTime.parse(mergedAt);
+                                mergedAtFmt = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss O", Locale.US));
+                            }
+                        } catch (Exception ignore) {}
+
+                        Map<String, String> row = new LinkedHashMap<>();
+                        row.put("number", String.valueOf(number));
+                        row.put("title", title);
+                        row.put("state", state);
+                        row.put("user", userName);
+                        row.put("created", createdAtFmt);
+                        row.put("merged", mergedAtFmt);
+                        prRows.add(row);
+                    }
+
+                    StringBuilder body = new StringBuilder();
+                    body.append("<div class=\"summary\">");
+                    body.append("<div class=\"card\"><div class=\"label\">Repository</div><div class=\"value\">").append(html(owner)).append("/").append(html(repo)).append("</div></div>");
+                    body.append("<div class=\"card\"><div class=\"label\">Total PRs</div><div class=\"value\">").append(totalPRs).append("</div></div>");
+                    body.append("<div class=\"card\"><div class=\"label\">Open</div><div class=\"value\">").append(openPRs).append("</div></div>");
+                    body.append("<div class=\"card\"><div class=\"label\">Merged</div><div class=\"value\">").append(mergedPRs).append("</div></div>");
+                    body.append("<div class=\"card\"><div class=\"label\">Closed</div><div class=\"value\">").append(closedPRs).append("</div></div>");
+                    body.append("</div>");
+
+                    body.append(prTable(prRows));
+                    body.append("<div class=\"foot\">Data source: GitHub Pull Requests API.</div>");
+
+                    String page = layout("PRs for " + html(owner) + "/" + html(repo), form(owner, repo, "prs") + body);
+                    sendHtml(exchange, 200, page);
+                    return;
+                }
+
+                // Handle commits view (default)
                 String endpoint = "https://api.github.com/users/" + url(username) + "/events";
                 JSONArray events;
                 try {
                     GithubDataFetcher gh = new GithubHttpClientDataFetcher();
                     events = gh.fetchAllEvent(endpoint);
                 } catch (Exception e) {
-                    sendHtml(exchange, 500, layout("Error", errorBox("Failed to fetch data: " + html(e.getMessage())) + form(username)));
+                    sendHtml(exchange, 500, layout("Error", errorBox("Failed to fetch data: " + html(e.getMessage())) + form(username, "", "commits")));
                     return;
                 }
 
                 if (events == null) {
-                    sendHtml(exchange, 200, layout("No Data", infoBox("No events found for user '" + html(username) + "'.") + form(username)));
+                    sendHtml(exchange, 200, layout("No Data", infoBox("No events found for user '" + html(username) + "'.") + form(username, "", "commits")));
                     return;
                 }
 
@@ -92,8 +183,8 @@ public class CommitMonitorServer {
 
                     totalPushes++;
                     JSONObject payload = ev.optJSONObject("payload");
-                    JSONObject repo = ev.optJSONObject("repo");
-                    String repoName = repo != null ? repo.optString("name", "unknown repo") : "unknown repo";
+                    JSONObject repoObj = ev.optJSONObject("repo");
+                    String repoName = repoObj != null ? repoObj.optString("name", "unknown repo") : "unknown repo";
 
                     int commits = 0;
                     if (payload != null) {
@@ -129,7 +220,7 @@ public class CommitMonitorServer {
                 body.append(table(rows));
                 body.append("<div class=\"foot\">Data source: GitHub public events API. Cached via Redis if available.</div>");
 
-                String page = layout("Commits for " + html(username), form(username) + body);
+                String page = layout("Commits for " + html(username), form(username, "", "commits") + body);
                 sendHtml(exchange, 200, page);
             } catch (Exception e) {
                 sendHtml(exchange, 500, layout("Unexpected Error", errorBox(html(e.toString()))));
@@ -163,13 +254,47 @@ public class CommitMonitorServer {
                     "</body></html>";
         }
 
-        private static String form(String userPrefill) {
+        private static String form(String userPrefill, String repoPrefill, String viewType) {
             String u = userPrefill == null ? "" : html(userPrefill);
-            return "<form method=\"GET\" action=\"/\" class=\"search\">" +
-                    "<label>GitHub username</label>" +
-                    "<input type=\"text\" name=\"user\" placeholder=\"octocat\" value=\"" + u + "\" required>" +
-                    "<button type=\"submit\">View commits</button>" +
-                    "</form>";
+            String r = repoPrefill == null ? "" : html(repoPrefill);
+            String v = viewType == null ? "commits" : html(viewType);
+            
+            StringBuilder formHtml = new StringBuilder();
+            formHtml.append("<form method=\"GET\" action=\"/\" class=\"search\">");
+            formHtml.append("<div class=\"view-selector\">");
+            formHtml.append("<label><input type=\"radio\" name=\"view\" value=\"commits\" ").append("commits".equals(v) ? "checked" : "").append("> Commits</label>");
+            formHtml.append("<label><input type=\"radio\" name=\"view\" value=\"prs\" ").append("prs".equals(v) ? "checked" : "").append("> Pull Requests</label>");
+            formHtml.append("</div>");
+            formHtml.append("<div id=\"commits-form\">");
+            formHtml.append("<label>GitHub username</label>");
+            formHtml.append("<input type=\"text\" name=\"user\" placeholder=\"octocat\" value=\"").append(u).append("\" id=\"user-input\">");
+            formHtml.append("<button type=\"submit\">View commits</button>");
+            formHtml.append("</div>");
+            formHtml.append("<div id=\"prs-form\" style=\"display:none;\">");
+            formHtml.append("<label>Owner</label>");
+            formHtml.append("<input type=\"text\" name=\"owner\" placeholder=\"owner\" value=\"").append(u).append("\" id=\"owner-input\">");
+            formHtml.append("<label>Repository</label>");
+            formHtml.append("<input type=\"text\" name=\"repo\" placeholder=\"repo\" value=\"").append(r).append("\" id=\"repo-input\">");
+            formHtml.append("<button type=\"submit\">View PRs</button>");
+            formHtml.append("</div>");
+            formHtml.append("</form>");
+            formHtml.append("<script>");
+            formHtml.append("document.querySelectorAll('input[name=\"view\"]').forEach(r=>{r.addEventListener('change',function(){");
+            formHtml.append("var isPRs=this.value==='prs';");
+            formHtml.append("document.getElementById('commits-form').style.display=isPRs?'none':'block';");
+            formHtml.append("document.getElementById('prs-form').style.display=isPRs?'block':'none';");
+            formHtml.append("var userInput=document.getElementById('user-input');");
+            formHtml.append("var ownerInput=document.getElementById('owner-input');");
+            formHtml.append("if(!isPRs&&userInput.value){ownerInput.value=userInput.value;}");
+            formHtml.append("else if(isPRs&&ownerInput.value&&!userInput.value){userInput.value=ownerInput.value;}");
+            formHtml.append("});});");
+            formHtml.append("var currentView=document.querySelector('input[name=\"view\"]:checked').value;");
+            formHtml.append("if(currentView==='prs'){");
+            formHtml.append("document.getElementById('commits-form').style.display='none';");
+            formHtml.append("document.getElementById('prs-form').style.display='block';");
+            formHtml.append("}");
+            formHtml.append("</script>");
+            return formHtml.toString();
         }
 
         private static String table(List<Map<String, String>> rows) {
@@ -184,6 +309,29 @@ public class CommitMonitorServer {
                   .append("<td>").append(html(r.getOrDefault("when", ""))).append("</td>")
                   .append("<td>").append(html(r.getOrDefault("repo", ""))).append("</td>")
                   .append("<td class=\"num\">").append(html(r.getOrDefault("commits", "0"))).append("</td>")
+                  .append("</tr>");
+            }
+            sb.append("</tbody></table></div>");
+            return sb.toString();
+        }
+
+        private static String prTable(List<Map<String, String>> rows) {
+            if (rows.isEmpty()) {
+                return infoBox("No pull requests found.");
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("<div class=\"table-wrap\">");
+            sb.append("<table><thead><tr><th>#</th><th>Title</th><th>State</th><th>User</th><th>Created</th><th>Merged</th></tr></thead><tbody>");
+            for (Map<String, String> r : rows) {
+                String state = r.getOrDefault("state", "");
+                String stateClass = "open".equals(state) ? "state-open" : ("closed".equals(state) && !"Not merged".equals(r.getOrDefault("merged", ""))) ? "state-merged" : "state-closed";
+                sb.append("<tr>")
+                  .append("<td class=\"num\">").append(html(r.getOrDefault("number", ""))).append("</td>")
+                  .append("<td>").append(html(r.getOrDefault("title", ""))).append("</td>")
+                  .append("<td><span class=\"").append(stateClass).append("\">").append(html(state.toUpperCase())).append("</span></td>")
+                  .append("<td>").append(html(r.getOrDefault("user", ""))).append("</td>")
+                  .append("<td>").append(html(r.getOrDefault("created", ""))).append("</td>")
+                  .append("<td>").append(html(r.getOrDefault("merged", ""))).append("</td>")
                   .append("</tr>");
             }
             sb.append("</tbody></table></div>");
@@ -229,7 +377,10 @@ public class CommitMonitorServer {
                 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial}
                 header{padding:16px 20px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#131b38,#0e1530)}
                 h1{margin:0;font-size:18px}
-                .search{display:flex;gap:10px;align-items:end;padding:16px 20px;border-bottom:1px solid var(--border)}
+                .search{display:flex;gap:10px;align-items:end;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+                .view-selector{display:flex;gap:16px;margin-bottom:10px;width:100%}
+                .view-selector label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)}
+                .view-selector input[type="radio"]{cursor:pointer}
                 .search label{display:block;color:var(--muted);font-size:12px}
                 .search input{flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#0d142c;color:var(--text)}
                 .search button{padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--accent);color:white;cursor:pointer}
@@ -237,11 +388,14 @@ public class CommitMonitorServer {
                 .card{background:var(--panel);padding:12px 14px;border:1px solid var(--border);border-radius:10px}
                 .card .label{font-size:12px;color:var(--muted)}
                 .card .value{font-size:20px}
-                .table-wrap{padding:0 20px 24px}
+                .table-wrap{padding:0 20px 24px;overflow-x:auto}
                 table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
                 thead{background:#0f1731}
                 th,td{padding:10px 12px;border-bottom:1px solid var(--border)}
                 td.num{text-align:right}
+                .state-open{color:var(--ok);font-weight:500}
+                .state-merged{color:var(--accent);font-weight:500}
+                .state-closed{color:var(--muted);font-weight:500}
                 .info,.error{margin:16px 20px;padding:12px 14px;border-radius:10px;border:1px solid var(--border)}
                 .info{background:#0e1b36;color:var(--text)}
                 .error{background:#2b1321;color:#ffd6d6;border-color:#5b2237}

@@ -37,9 +37,9 @@ public class App {
         if (args.length == 2) {
             try {
                 GithubDataFetcher gh = new GithubHttpClientDataFetcher();
-                JSONArray events = gh.fetchPREvents(args[0], args[1]);
+                JSONArray events = gh.fetchHistoricalPRs(args[0], args[1]);
 
-                DataFormater.prDisplayer(events);
+                DataFormater.historicalPRsDisplayer(events);
             } catch (Exception e) {
                 System.err.println("Error: " + e.getMessage());
             }

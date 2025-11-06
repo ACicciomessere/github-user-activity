@@ -76,4 +76,28 @@ public class GithubHttpClientDataFetcher implements GithubDataFetcher {
         }
         return null;
     }
+
+    @Override
+    public JSONArray fetchPREvents(String owner, String repo) throws Exception {
+        String url = "https://api.github.com/repos/" + owner + "/" + repo + "/events";
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                    .header("Accept", "application/vnd.github+json").GET().build();
+            HttpResponse<String> response;
+            response = client.send(request, BodyHandlers.ofString());
+            return new JSONArray(response.body());
+        }
+    }
+
+    @Override
+    public JSONArray fetchHistoricalPRs(String owner, String repo) throws Exception {
+        String url = "https://api.github.com/repos/" + owner + "/" + repo + "/pulls?state=all";
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                    .header("Accept", "application/vnd.github+json").GET().build();
+            HttpResponse<String> response;
+            response = client.send(request, BodyHandlers.ofString());
+            return new JSONArray(response.body());
+        }
+    }
 }
