@@ -1,8 +1,8 @@
-package edu.itba.useractivity.infrastructure.adapters.github;
+package edu.itba.useractivity.infrastructure.adapters.driven.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import edu.itba.useractivity.domain.models.*;
 import lombok.RequiredArgsConstructor;
-import useractivity.domain.models.*;
 
 import java.time.ZonedDateTime;
 import java.util.List;

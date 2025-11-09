@@ -1,15 +1,19 @@
 package edu.itba.useractivity.application;
 
-import lombok.AllArgsConstructor;
-import org.example.domain.ports.EventDataPort;
-import org.example.domain.models.Event;
+import edu.itba.useractivity.domain.models.Event;
+import edu.itba.useractivity.domain.ports.EventDataPort;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@AllArgsConstructor
+@Service
 public class GetUserEventsUseCase {
+
     private final EventDataPort eventDataPort;
 
+    public GetUserEventsUseCase(EventDataPort eventDataPort) {
+        this.eventDataPort = eventDataPort;
+    }
     public List<Event> execute(String username) {
         return eventDataPort.getEventsByUser(username);
     }

@@ -1,9 +1,10 @@
-package edu.itba.useractivity.infrastructure.adapters.github;
+package edu.itba.useractivity.infrastructure.adapters.driven.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.domain.models.Event;
-import org.example.domain.ports.EventDataPort;
+import edu.itba.useractivity.domain.models.Event;
+import edu.itba.useractivity.domain.ports.EventDataPort;
+import org.springframework.stereotype.Component;
 
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
+@Component
 public class GitHubEventAdapter implements EventDataPort {
 
     private final GitHubEventMapper mapper;

@@ -1,6 +1,7 @@
-package org.example.domain.ports;
+package edu.itba.useractivity.domain.ports;
 
-import org.example.domain.models.Event;
+
+import edu.itba.useractivity.domain.models.Event;
 
 import java.util.List;
 

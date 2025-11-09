@@ -1,4 +1,4 @@
-package org.example.domain.models;
+package edu.itba.useractivity.domain.models;
 
 import lombok.AllArgsConstructor;
 
