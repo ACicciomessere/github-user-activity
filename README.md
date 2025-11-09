@@ -30,12 +30,12 @@ Now it also includes a tiny Web UI (embedded server) to monitor commit activity 
 
 ```bash
 # Display activities of a user
-java -cp "bin:lib/*" App <username>
-# ex: java -cp "bin:lib/*" App ruxlsr
+java -cp "bin:lib/*" OLD.App <username>
+# ex: java -cp "bin:lib/*" OLD.App ruxlsr
 
 # Display activity with filter
-java -cp "bin:lib/*" App <username> [EventType]
-# ex: java -cp "bin:lib/*" App ruxlsr PushEvent
+java -cp "bin:lib/*" OLD.App <username> [EventType]
+# ex: java -cp "bin:lib/*" OLD.App ruxlsr PushEvent
 ```
 
 > En Windows reemplaza `:` por `;` dentro de las rutas de classpath.
@@ -50,10 +50,10 @@ Start the embedded HTTP server and open the monitor in your browser. It exposes 
 
 ```bash
 # Start on default port 8080
-java -cp "bin:lib/*" App server
+java -cp "bin:lib/*" OLD.App server
 
 # Or specify a port, e.g. 3000
-java -cp "bin:lib/*" App server 3000
+java -cp "bin:lib/*" OLD.App server 3000
 ```
 
 Open http://localhost:8080/ (or your chosen port) and type a username (e.g. `octocat`).

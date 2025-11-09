@@ -1,5 +1,6 @@
+package OLD;
+
 import org.json.JSONArray;
-import model.GithubDataFetcher;
 
 public class App {
 
@@ -47,6 +48,6 @@ public class App {
         }
 
 
-        System.err.println("Usage: java -cp \"bin:lib/*\" App <username> [EventType] | server [port]");
+        System.err.println("Usage: java -cp \"bin:lib/*\" OLD.App <username> [EventType] | server [port]");
     }
 }

@@ -1,3 +1,5 @@
+package OLD;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -6,9 +8,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 
 import org.json.JSONArray;
-
-import model.GithubCacheManager;
-import model.GithubDataFetcher;
 
 public class GithubHttpClientDataFetcher implements GithubDataFetcher {
 
