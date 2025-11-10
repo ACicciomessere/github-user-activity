@@ -26,11 +26,22 @@ public class GitHubMapper {
                 .collect(Collectors.toList());
     }
 
+    public List<Commit> mapToCommits(JsonNode rootNode) {
+        return StreamSupport.stream(rootNode.spliterator(), false)
+                .map(this::mapToCommit)
+                .collect(Collectors.toList());
+    }
+
     public Commit mapToCommit(JsonNode node) {
+        JsonNode commitNode = node.path("commit");
+        JsonNode authorNode = commitNode.path("author");
+
         return new Commit(
                 node.path("sha").asText(),
-                node.path("message").asText(),
-                node.path("url").asText()
+                commitNode.path("message").asText(),
+                authorNode.path("name").asText(),
+                ZonedDateTime.parse(authorNode.path("date").asText()),
+                node.path("html_url").asText()
         );
     }
 

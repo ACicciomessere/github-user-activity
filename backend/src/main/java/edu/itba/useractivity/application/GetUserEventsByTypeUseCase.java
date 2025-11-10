@@ -8,7 +8,6 @@ import java.util.List;
 
 @Service
 public class GetUserEventsByTypeUseCase {
-
     private final GetUserEventsUseCase getUserEventsUseCase;
 
     public GetUserEventsByTypeUseCase(GetUserEventsUseCase getUserEventsUseCase) {

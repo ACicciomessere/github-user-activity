@@ -18,4 +18,8 @@ public class PullRequest {
     private ZonedDateTime closedAt;
     private ZonedDateTime mergedAt;
     private String htmlUrl;
+
+    public boolean isMerged() {
+        return mergedAt != null;
+    }
 }

@@ -1,28 +1,51 @@
 package edu.itba.useractivity.infrastructure.adapters.driving;
 
+import edu.itba.useractivity.application.GetRepositoryCommitsUseCase;
+import edu.itba.useractivity.application.GetRepositoryMergedPullRequestsUseCase;
 import edu.itba.useractivity.application.GetRepositoryPullRequestsUseCase;
+import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/repository")
-@AllArgsConstructor
+@RequestMapping("/repository/{owner}/{repository}")
+@RequiredArgsConstructor
 public class RepositoryController {
     private final GetRepositoryPullRequestsUseCase getRepositoryPullRequestsUseCase;
+    private final GetRepositoryCommitsUseCase getRepositoryCommits;
+    private final GetRepositoryMergedPullRequestsUseCase getMergedPullRequestsUseCase;
 
-    @GetMapping("/{repository}/owner/{owner}/pull-requests")
-    public ResponseEntity<List<PullRequest>> getEvents(
-            @PathVariable("repository") String repository,
-            @PathVariable("owner") String owner
+    private String owner;
+    private String repository;
+
+    @ModelAttribute
+    public void setRepositoryContext(
+            @PathVariable("owner") String owner,
+            @PathVariable("repository") String repository
     ) {
+        this.owner = owner;
+        this.repository = repository;
+    }
+
+    @GetMapping("/pull-requests")
+    public ResponseEntity<List<PullRequest>> getRepositoryPullRequests() {
         List<PullRequest> pullRequests = getRepositoryPullRequestsUseCase.execute(owner, repository);
         return ResponseEntity.ok(pullRequests);
+    }
+
+    @GetMapping("/pull-requests/merged")
+    public ResponseEntity<List<PullRequest>> getMergedPullRequests() {
+        List<PullRequest> mergedPRs = getMergedPullRequestsUseCase.execute(owner, repository);
+        return ResponseEntity.ok(mergedPRs);
+    }
+
+    @GetMapping("/commits")
+    public ResponseEntity<List<Commit>> getRepositoryCommits() {
+        List<Commit> commits = getRepositoryCommits.execute(owner, repository);
+        return ResponseEntity.ok(commits);
     }
 }
