@@ -2,10 +2,9 @@ package edu.itba.useractivity.infrastructure.adapters.driven.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.itba.useractivity.domain.models.Event;
-import edu.itba.useractivity.domain.ports.outbound.EventDataPort;
+import edu.itba.useractivity.domain.models.PullRequest;
+import edu.itba.useractivity.domain.ports.outbound.RepositoryDataPort;
 import org.springframework.stereotype.Component;
-
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,38 +14,38 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Component
-public class GitHubEventAdapter implements EventDataPort {
+public class GitHubRepositoryAdapter implements RepositoryDataPort {
 
     private final GitHubMapper mapper;
     private final ObjectMapper objectMapper;
 
-    public GitHubEventAdapter() {
+    public GitHubRepositoryAdapter() {
         this.mapper = new GitHubMapper();
         this.objectMapper = new ObjectMapper();
     }
 
     @Override
-    public List<Event> getEventsByUser(String username) {
+    public List<PullRequest> getPullRequests(String ownerName, String repositoryName) {
         try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/users/" + username + "/events"))
-                    .header("Accept", "application/json")
+                    .uri(URI.create("https://api.github.com/repos/" + ownerName + "/" + repositoryName + "/pulls?state=all"))
+                    .header("Accept", "application/vnd.github+json")
                     .GET()
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
+                // TODO manejo de errores
                 throw new RuntimeException("GitHub API returned status " + response.statusCode());
             }
 
             JsonNode rootNode = objectMapper.readTree(response.body());
-            return mapper.mapToEvents(rootNode);
+            return mapper.mapToPullRequests(rootNode);
 
         } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to fetch events from GitHub", e);
+            throw new RuntimeException("Failed to fetch pullRequests from GitHub", e);
         }
     }
 }
-

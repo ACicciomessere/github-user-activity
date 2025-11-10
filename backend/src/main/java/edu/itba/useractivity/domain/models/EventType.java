@@ -9,15 +9,15 @@ public enum EventType {
     FORK("ForkEvent"),
     CREATE("CreateEvent");
 
-    private final String apiName;
+    private final String eventName;
 
-    EventType(String apiName) {
-        this.apiName = apiName;
+    EventType(String eventName) {
+        this.eventName = eventName;
     }
 
-    public static EventType fromApiName(String apiName) {
+    public static EventType fromEventName(String eventName) {
         for (EventType type : values()) {
-            if (type.apiName.equalsIgnoreCase(apiName)) {
+            if (type.eventName.equalsIgnoreCase(eventName)) {
                 return type;
             }
         }

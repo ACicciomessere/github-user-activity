@@ -1,4 +1,4 @@
-package edu.itba.useractivity.domain.ports;
+package edu.itba.useractivity.domain.ports.outbound;
 
 
 import edu.itba.useractivity.domain.models.Event;

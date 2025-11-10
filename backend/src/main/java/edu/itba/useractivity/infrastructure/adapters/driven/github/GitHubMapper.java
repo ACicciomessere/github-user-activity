@@ -11,13 +11,64 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @RequiredArgsConstructor
-public class GitHubEventMapper {
+public class GitHubMapper {
 
     public List<Event> mapToEvents(JsonNode rootNode) {
         return StreamSupport.stream(rootNode.spliterator(), false)
                 .map(this::mapToEvent)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toList());
+    }
+
+    public List<PullRequest> mapToPullRequests(JsonNode rootNode) {
+        return StreamSupport.stream(rootNode.spliterator(), false)
+                .map(this::mapToPullRequest)
+                .collect(Collectors.toList());
+    }
+
+    public Commit mapToCommit(JsonNode node) {
+        return new Commit(
+                node.path("sha").asText(),
+                node.path("message").asText(),
+                node.path("url").asText()
+        );
+    }
+
+    public User mapToUser(JsonNode node) {
+        return new User(
+                node.path("id").asLong(),
+                node.path("login").asText(),
+                node.path("avatar_url").asText(),
+                node.path("html_url").asText(),
+                node.path("type").asText()
+        );
+    }
+
+    public Repository mapToRepository(JsonNode node) {
+        return new Repository(
+                node.path("id").asLong(),
+                node.path("name").asText(),
+                node.path("full_name").asText(),
+                node.path("html_url").asText(),
+                node.path("description").asText(),
+                node.path("private").asBoolean(false),
+                node.has("owner") ? mapToUser(node.path("owner")) : null
+        );
+    }
+
+    public PullRequest mapToPullRequest(JsonNode node) {
+        return new PullRequest(
+                node.path("id").asLong(),
+                node.path("number").asInt(),
+                node.path("title").asText(),
+                node.path("state").asText(),
+                mapToUser(node.path("user")),
+                ZonedDateTime.parse(node.path("created_at").asText()),
+                ZonedDateTime.parse(node.path("updated_at").asText()),
+                node.has("closed_at") && !node.get("closed_at").isNull() ? ZonedDateTime.parse(node.path("closed_at").asText()) : null,
+                node.has("merged_at") && !node.get("merged_at").isNull() ? ZonedDateTime.parse(node.path("merged_at").asText()) : null,
+                node.path("html_url").asText()
+        );
     }
 
     private Optional<Event> mapToEvent(JsonNode node) {
@@ -82,51 +133,6 @@ public class GitHubEventMapper {
                 payload.path("ref").asText(),
                 payload.path("master_branch").asText(),
                 payload.path("description").asText()
-        );
-    }
-
-    public Commit mapToCommit(JsonNode node) {
-        return new Commit(
-                node.path("sha").asText(),
-                node.path("message").asText(),
-                node.path("url").asText()
-        );
-    }
-
-    public User mapToUser(JsonNode node) {
-        return new User(
-                node.path("id").asLong(),
-                node.path("login").asText(),
-                node.path("avatar_url").asText(),
-                node.path("html_url").asText(),
-                node.path("type").asText()
-        );
-    }
-
-    public Repository mapToRepository(JsonNode node) {
-        return new Repository(
-                node.path("id").asLong(),
-                node.path("name").asText(),
-                node.path("full_name").asText(),
-                node.path("html_url").asText(),
-                node.path("description").asText(),
-                node.path("private").asBoolean(false),
-                node.has("owner") ? mapToUser(node.path("owner")) : null
-        );
-    }
-
-    public PullRequest mapToPullRequest(JsonNode node) {
-        return new PullRequest(
-                node.path("id").asLong(),
-                node.path("number").asInt(),
-                node.path("title").asText(),
-                node.path("state").asText(),
-                mapToUser(node.path("user")),
-                ZonedDateTime.parse(node.path("created_at").asText()),
-                ZonedDateTime.parse(node.path("updated_at").asText()),
-                node.has("closed_at") && !node.get("closed_at").isNull() ? ZonedDateTime.parse(node.path("closed_at").asText()) : null,
-                node.has("merged_at") && !node.get("merged_at").isNull() ? ZonedDateTime.parse(node.path("merged_at").asText()) : null,
-                node.path("html_url").asText()
         );
     }
 }
