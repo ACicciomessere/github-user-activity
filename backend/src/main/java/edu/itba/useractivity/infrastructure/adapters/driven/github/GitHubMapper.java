@@ -100,51 +100,57 @@ public class GitHubMapper {
                 .map(this::mapToCommit)
                 .collect(Collectors.toList());
 
-        return new PushEvent(
-                node.path("id").asText(),
-                mapToUser(node.path("actor")),
-                mapToRepository(node.path("repo")),
-                ZonedDateTime.parse(node.path("created_at").asText()),
-                payload.path("ref").asText(),
-                payload.path("before").asText(),
-                payload.path("head").asText(),
-                commits
-        );
+        return PushEvent.builder()
+                .id(node.path("id").asText())
+                .type(EventType.PUSH)
+                .user(mapToUser(node.path("actor")))
+                .repo(mapToRepository(node.path("repo")))
+                .createdAt(ZonedDateTime.parse(node.path("created_at").asText()))
+                .ref(payload.path("ref").asText())
+                .before(payload.path("before").asText())
+                .head(payload.path("head").asText())
+                .commits(commits)
+                .build();
     }
 
     private PullRequestEvent mapToPullRequestEvent(JsonNode node) {
-        return new PullRequestEvent(
-                node.path("id").asText(),
-                mapToUser(node.path("actor")),
-                mapToRepository(node.path("repo")),
-                ZonedDateTime.parse(node.path("created_at").asText()),
-                PullRequestAction.fromString(node.path("payload").get("action").asText()),
-                mapToPullRequest(node.path("payload").get("pull_request"))
-        );
+        JsonNode payload = node.path("payload");
+        return PullRequestEvent.builder()
+                .id(node.path("id").asText())
+                .type(EventType.PULL_REQUEST)
+                .user(mapToUser(node.path("actor")))
+                .repo(mapToRepository(node.path("repo")))
+                .createdAt(ZonedDateTime.parse(node.path("created_at").asText()))
+                .action(PullRequestAction.fromString(payload.get("action").asText()))
+                .pullRequest(mapToPullRequest(payload.get("pull_request")))
+                .build();
     }
 
     private ForkEvent mapToForkEvent(JsonNode node) {
-        return new ForkEvent(
-                node.path("id").asText(),
-                mapToUser(node.path("actor")),
-                mapToRepository(node.path("repo")),
-                ZonedDateTime.parse(node.path("created_at").asText()),
-                mapToRepository(node.path("payload").path("forkee"))
-        );
+        JsonNode payload = node.path("payload");
+        return ForkEvent.builder()
+                .id(node.path("id").asText())
+                .type(EventType.FORK)
+                .user(mapToUser(node.path("actor")))
+                .repo(mapToRepository(node.path("repo")))
+                .createdAt(ZonedDateTime.parse(node.path("created_at").asText()))
+                .forkee(mapToRepository(payload.path("forkee")))
+                .build();
     }
 
     private CreateEvent mapToCreateEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
-        return new CreateEvent(
-                node.path("id").asText(),
-                mapToUser(node.path("actor")),
-                mapToRepository(node.path("repo")),
-                ZonedDateTime.parse(node.path("created_at").asText()),
-                payload.path("ref_type").asText(),
-                payload.path("ref").asText(),
-                payload.path("master_branch").asText(),
-                payload.path("description").asText()
-        );
+        return CreateEvent.builder()
+                .id(node.path("id").asText())
+                .type(EventType.CREATE)
+                .user(mapToUser(node.path("actor")))
+                .repo(mapToRepository(node.path("repo")))
+                .createdAt(ZonedDateTime.parse(node.path("created_at").asText()))
+                .ref(payload.path("ref").asText())
+                .refType(payload.path("ref_type").asText())
+                .masterBranch(payload.path("master_branch").asText())
+                .description(payload.path("description").asText())
+                .build();
     }
 }
 

@@ -1,6 +1,9 @@
 package edu.itba.useractivity.domain.models;
 
+import edu.itba.useractivity.domain.models.exceptions.InvalidPullRequestActionException;
 import lombok.Getter;
+
+import java.util.Arrays;
 
 @Getter
 public enum PullRequestAction {
@@ -28,12 +31,15 @@ public enum PullRequestAction {
     }
 
     public static PullRequestAction fromString(String action) {
-        for (PullRequestAction a : values()) {
-            if (a.value.equalsIgnoreCase(action)) {
-                return a;
-            }
+        if (action == null || action.isBlank()) {
+            throw new InvalidPullRequestActionException(action);
         }
-        throw new IllegalArgumentException("Unknown PullRequestAction: " + action);
+
+        return Arrays.stream(values())
+                .filter(a -> a.value.equalsIgnoreCase(action))
+                .findFirst()
+                .orElseThrow(() ->
+                        new InvalidPullRequestActionException(action));
     }
 }
 

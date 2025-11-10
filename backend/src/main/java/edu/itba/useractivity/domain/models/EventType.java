@@ -1,6 +1,9 @@
 package edu.itba.useractivity.domain.models;
 
+import edu.itba.useractivity.domain.models.exceptions.InvalidEventTypeException;
 import lombok.Getter;
+
+import java.util.Arrays;
 
 @Getter
 public enum EventType {
@@ -16,12 +19,15 @@ public enum EventType {
     }
 
     public static EventType fromEventName(String eventName) {
-        for (EventType type : values()) {
-            if (type.eventName.equalsIgnoreCase(eventName)) {
-                return type;
-            }
+        if (eventName == null || eventName.isBlank()) {
+            throw new InvalidEventTypeException(eventName);
         }
-        return null;
+        return Arrays.stream(values())
+                .filter(type -> type.eventName.equalsIgnoreCase(eventName))
+                .findFirst()
+                .orElseThrow(() ->
+                        new InvalidEventTypeException(eventName));
+
     }
 }
 
