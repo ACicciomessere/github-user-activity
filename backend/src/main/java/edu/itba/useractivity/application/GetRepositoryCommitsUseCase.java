@@ -14,8 +14,8 @@ public class GetRepositoryCommitsUseCase {
         this.repositoryDataPort = repositoryDataPort;
     }
 
-    public List<Commit> execute(String ownerName, String repositoryName) {
-        return repositoryDataPort.getCommits(ownerName, repositoryName);
+    public List<Commit> execute(String ownerName, String repositoryName, int page, int perPage) {
+        return repositoryDataPort.getCommits(ownerName, repositoryName, page, perPage);
     }
 }
 

@@ -14,8 +14,8 @@ public class GetUserEventsByTypeUseCase {
         this.getUserEventsUseCase = getUserEventsUseCase;
     }
 
-    public List<Event> execute(EventType eventType, String username) {
-        return getUserEventsUseCase.execute(username).stream()
+    public List<Event> execute(EventType eventType, String username, int page, int perPage) {
+        return getUserEventsUseCase.execute(username, page, perPage).stream()
                 .filter(e -> eventType.equals(e.getType()))
                 .toList();
     }

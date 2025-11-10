@@ -30,10 +30,11 @@ public class GitHubEventAdapter implements EventDataPort {
     }
 
     @Override
-    public List<Event> getEventsByUser(String username) {
+    public List<Event> getEventsByUser(String username, int page, int perPage) {
         try {
+            String url = "https://api.github.com/users/" + username + "/events?page=" + page + "&per_page=" + perPage;
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/users/" + username + "/events"))
+                    .uri(URI.create(url))
                     .header("Accept", "application/json")
                     .GET()
                     .build();
