@@ -1,11 +1,11 @@
 package edu.itba.useractivity.application.services;
 
 import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
+import edu.itba.useractivity.domain.models.CommitsResponse;
 import edu.itba.useractivity.application.usecases.GetRepositoryCommitsUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryMergedPullRequestsUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsLifeAvgUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsUseCase;
-import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class RepositoryService implements RepositoryInboundPort {
     }
 
     @Override
-    public List<Commit> getCommits(String owner, String repo, int page, int perPage) {
+    public CommitsResponse getCommits(String owner, String repo, int page, int perPage) {
         return getRepositoryCommitsUseCase.execute(owner, repo, page, perPage);
     }
 

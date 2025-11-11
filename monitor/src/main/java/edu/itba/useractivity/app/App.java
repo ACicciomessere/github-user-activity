@@ -194,14 +194,14 @@ public class App {
                             display: grid;
                             gap: 20px;
                         }
-                        .pr-card, .commit-card {
+                        .pr-card, .commit-card, .life-avg-card {
                             background: white;
                             padding: 20px;
                             border-radius: 10px;
                             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
                             transition: transform 0.2s;
                         }
-                        .pr-card:hover, .commit-card:hover {
+                        .pr-card:hover, .commit-card:hover, .life-avg-card:hover {
                             transform: translateY(-5px);
                             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
                         }
@@ -292,6 +292,55 @@ public class App {
                         .pagination select:focus {
                             border-color: #667eea;
                         }
+                        .participation-chart {
+                            background: white;
+                            padding: 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                            margin-bottom: 20px;
+                        }
+                        .participation-chart h3 {
+                            margin-bottom: 20px;
+                            color: #333;
+                            font-size: 1.3em;
+                        }
+                        .participation-item {
+                            margin-bottom: 15px;
+                        }
+                        .participation-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 5px;
+                        }
+                        .participation-username {
+                            font-weight: bold;
+                            color: #667eea;
+                        }
+                        .participation-stats {
+                            color: #666;
+                            font-size: 14px;
+                        }
+                        .participation-bar-container {
+                            width: 100%;
+                            height: 25px;
+                            background: #e0e0e0;
+                            border-radius: 12px;
+                            overflow: hidden;
+                        }
+                        .participation-bar {
+                            height: 100%;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            border-radius: 12px;
+                            transition: width 0.5s ease;
+                            display: flex;
+                            align-items: center;
+                            justify-content: flex-end;
+                            padding-right: 8px;
+                            color: white;
+                            font-size: 12px;
+                            font-weight: bold;
+                        }
                     </style>
                 </head>
                 <body>
@@ -337,6 +386,7 @@ public class App {
                                 <button onclick="fetchPullRequests()">🔀 Pull Requests</button>
                                 <button onclick="fetchMergedPullRequests()">✅ Merged PRs</button>
                                 <button onclick="fetchCommits()">📝 Commits</button>
+                                <button onclick="fetchPullRequestsLifeAvg()">📊 PR Life Avg</button>
                                 <button onclick="clearRepoResults()" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">🗑️ Clear</button>
                             </div>
                             <div id="repo-loading">Loading...</div>
@@ -369,7 +419,7 @@ public class App {
                         let repoCurrentPage = 1;
                         let repoCurrentPerPage = 30;
                         let lastRepoItemsCount = 0;
-                        let currentRepoType = null; // 'pr', 'merged', 'commits'
+                        let currentRepoType = null; // 'pr', 'merged', 'commits', 'life-avg'
                         
                         const usernameInput = document.getElementById('username');
                         
@@ -691,8 +741,12 @@ public class App {
                                     return;
                                 }
                                 
-                                const commits = await response.json();
+                                const commitsResponse = await response.json();
                                 loading.style.display = 'none';
+                                
+                                const commits = commitsResponse.commits || [];
+                                const userParticipations = commitsResponse.userParticipations || [];
+                                
                                 lastRepoItemsCount = commits.length;
                                 
                                 if (commits.length === 0 && repoCurrentPage === 1) {
@@ -707,12 +761,58 @@ public class App {
                                     return;
                                 }
                                 
-                                displayCommits(commits);
+                                displayCommitsWithParticipation(commits, userParticipations);
                                 updateRepoPagination();
                             } catch (err) {
                                 loading.style.display = 'none';
                                 pagination.style.display = 'none';
                                 showRepoError('Failed to fetch commits: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            }
+                        }
+
+                        async function fetchPullRequestsLifeAvg() {
+                            const owner = document.getElementById('owner').value.trim();
+                            const repository = document.getElementById('repository').value.trim();
+                            
+                            if (!owner || !repository) {
+                                showRepoError('Please enter both owner and repository');
+                                return;
+                            }
+
+                            currentRepoType = 'life-avg';
+
+                            const loading = document.getElementById('repo-loading');
+                            const error = document.getElementById('repo-error');
+                            const results = document.getElementById('repo-results');
+                            const pagination = document.getElementById('repo-pagination');
+
+                            loading.style.display = 'block';
+                            error.style.display = 'none';
+                            results.innerHTML = '';
+                            pagination.style.display = 'none';
+
+                            try {
+                                const response = await fetch(`/api/repository/${owner}/${repository}/pull-requests/life-avg`);
+                                
+                                if (!response.ok) {
+                                    const errorData = await response.json();
+                                    loading.style.display = 'none';
+                                    showRepoErrorFromResponse(errorData);
+                                    return;
+                                }
+                                
+                                const lifeAvgData = await response.json();
+                                loading.style.display = 'none';
+                                
+                                if (lifeAvgData.length === 0) {
+                                    showRepoError('No pull request life average data found for this repository');
+                                    return;
+                                }
+                                
+                                displayPullRequestsLifeAvg(lifeAvgData);
+                            } catch (err) {
+                                loading.style.display = 'none';
+                                showRepoError('Failed to fetch pull requests life average: ' + err.message + '. Make sure the backend is running on localhost:8080');
                             }
                         }
                         
@@ -835,9 +935,38 @@ public class App {
                             });
                         }
 
-                        function displayCommits(commits) {
+                        function displayCommitsWithParticipation(commits, userParticipations) {
                             const results = document.getElementById('repo-results');
+                            results.innerHTML = '';
                             
+                            // Mostrar gráfico de participación si hay datos
+                            if (userParticipations && userParticipations.length > 0) {
+                                const chartCard = document.createElement('div');
+                                chartCard.className = 'participation-chart';
+                                
+                                let chartHTML = '<h3>📊 Participación de Usuarios en Commits</h3>';
+                                
+                                userParticipations.forEach(participation => {
+                                    chartHTML += `
+                                        <div class="participation-item">
+                                            <div class="participation-header">
+                                                <span class="participation-username">👤 ${participation.username || 'Unknown'}</span>
+                                                <span class="participation-stats">${participation.commitCount} commits (${participation.percentage.toFixed(2)}%)</span>
+                                            </div>
+                                            <div class="participation-bar-container">
+                                                <div class="participation-bar" style="width: ${participation.percentage}%">
+                                                    ${participation.percentage >= 5 ? participation.percentage.toFixed(1) + '%' : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                
+                                chartCard.innerHTML = chartHTML;
+                                results.appendChild(chartCard);
+                            }
+                            
+                            // Mostrar commits
                             commits.forEach(commit => {
                                 const card = document.createElement('div');
                                 card.className = 'commit-card';
@@ -856,6 +985,73 @@ public class App {
                                     <div class="commit-author">
                                         ${commit.authorName ? `👤 ${commit.authorName}` : ''}
                                         ${commit.htmlUrl ? `<br><a href="${commit.htmlUrl}" target="_blank">🔗 View on GitHub</a>` : ''}
+                                    </div>
+                                `;
+                                
+                                results.appendChild(card);
+                            });
+                        }
+                        
+                        function displayCommits(commits) {
+                            displayCommitsWithParticipation(commits, []);
+                        }
+
+                        function displayPullRequestsLifeAvg(lifeAvgData) {
+                            const results = document.getElementById('repo-results');
+                            
+                            lifeAvgData.forEach(item => {
+                                const card = document.createElement('div');
+                                card.className = 'life-avg-card';
+                                
+                                // Convertir Duration (ISO-8601) a horas y minutos legibles
+                                let hours = 0;
+                                let minutes = 0;
+                                let seconds = 0;
+                                
+                                if (item.hours) {
+                                    // El formato viene como "PT72H30M15S" o similar (ISO-8601 Duration)
+                                    const durationStr = String(item.hours);
+                                    const hoursMatch = durationStr.match(/(\\d+)H/);
+                                    const minutesMatch = durationStr.match(/(\\d+)M/);
+                                    const secondsMatch = durationStr.match(/(\\d+)S/);
+                                    
+                                    hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+                                    minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+                                    seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+                                }
+                                
+                                const totalHours = hours + (minutes / 60) + (seconds / 3600);
+                                let formattedTime = '';
+                                let detailedTime = '';
+                                
+                                if (totalHours >= 24) {
+                                    const days = Math.floor(totalHours / 24);
+                                    const remainingHours = Math.floor(totalHours % 24);
+                                    formattedTime = `${days} día${days > 1 ? 's' : ''} ${remainingHours} hora${remainingHours !== 1 ? 's' : ''}`;
+                                    detailedTime = `${days}d ${remainingHours}h ${minutes}m`;
+                                } else if (totalHours >= 1) {
+                                    formattedTime = `${totalHours.toFixed(2)} horas`;
+                                    detailedTime = `${hours}h ${minutes}m ${seconds}s`;
+                                } else if (minutes > 0) {
+                                    formattedTime = `${(minutes + seconds / 60).toFixed(2)} minutos`;
+                                    detailedTime = `${minutes}m ${seconds}s`;
+                                } else {
+                                    formattedTime = `${seconds} segundos`;
+                                    detailedTime = `${seconds}s`;
+                                }
+                                
+                                card.innerHTML = `
+                                    <div class="pr-header">
+                                        <div>
+                                            <span class="pr-number">📅 ${item.month || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="event-body">
+                                        <strong>Promedio de vida: ${formattedTime}</strong>
+                                    </div>
+                                    <div class="event-details">
+                                        📊 Total de PRs cerrados: ${item.count || 0}
+                                        ${detailedTime ? `<br>⏱️ ${detailedTime}` : ''}
                                     </div>
                                 `;
                                 
@@ -884,7 +1080,9 @@ public class App {
             String path = exchange.getRequestURI().getPath();
             
             // Route to appropriate handler based on path
-            if (path.endsWith("/pull-requests/merged")) {
+            if (path.endsWith("/pull-requests/life-avg")) {
+                new Handler.RepositoryPullRequestsLifeAvgHandler().handle(exchange);
+            } else if (path.endsWith("/pull-requests/merged")) {
                 new Handler.RepositoryMergedPullRequestsHandler().handle(exchange);
             } else if (path.endsWith("/pull-requests")) {
                 new Handler.RepositoryPullRequestsHandler().handle(exchange);

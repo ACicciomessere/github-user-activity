@@ -331,4 +331,72 @@ public class Handler {
             }
         }
     }
+
+    public static class RepositoryPullRequestsLifeAvgHandler implements HttpHandler {
+        private final HttpClient httpClient = HttpClient.newHttpClient();
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            // Path format: /api/repository/{owner}/{repository}/pull-requests/life-avg
+            String[] parts = path.substring("/api/repository/".length()).split("/");
+            
+            if (parts.length < 2) {
+                sendResponse(exchange, 400, "Owner and repository are required");
+                return;
+            }
+
+            String owner = parts[0];
+            String repository = parts[1];
+
+            String url = REPOSITORY_PULL_REQUESTS_LIFE_AVG(owner, repository);
+
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    byte[] responseBytes = response.body().getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, responseBytes.length);
+
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(responseBytes);
+                    }
+                } else {
+                    sendErrorResponse(exchange, response.statusCode(), response.body());
+                }
+            } catch (Exception e) {
+                JSONObject errorJson = new JSONObject();
+                errorJson.put("error", "Connection Error");
+                errorJson.put("message", "Error connecting to backend: " + e.getMessage());
+                errorJson.put("status", 500);
+                
+                byte[] response = errorJson.toString().getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(500, response.length);
+                
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response);
+                }
+            }
+        }
+
+        private void sendResponse(HttpExchange exchange, int statusCode, String message) throws IOException {
+            JSONObject json = new JSONObject();
+            json.put("error", message);
+
+            byte[] response = json.toString().getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(statusCode, response.length);
+
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response);
+            }
+        }
+    }
 }

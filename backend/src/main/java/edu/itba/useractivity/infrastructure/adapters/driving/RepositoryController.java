@@ -1,7 +1,7 @@
 package edu.itba.useractivity.infrastructure.adapters.driving;
 
 import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
-import edu.itba.useractivity.domain.models.Commit;
+import edu.itba.useractivity.domain.models.CommitsResponse;
 import edu.itba.useractivity.domain.models.PullRequest;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +47,12 @@ public class RepositoryController {
     }
 
     @GetMapping("/commits")
-    public ResponseEntity<List<Commit>> getRepositoryCommits(
+    public ResponseEntity<CommitsResponse> getRepositoryCommits(
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "per_page", defaultValue = "30") int perPage
     ) {
-        List<Commit> commits = repositoryInboundPort.getCommits(owner, repository, page, perPage);
-        return ResponseEntity.ok(commits);
+        CommitsResponse commitsResponse = repositoryInboundPort.getCommits(owner, repository, page, perPage);
+        return ResponseEntity.ok(commitsResponse);
     }
 
     @GetMapping("/pull-requests/life-avg")

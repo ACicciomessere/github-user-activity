@@ -16,4 +16,8 @@ public class Router {
     public static String REPOSITORY_COMMITS(String owner, String repo){ 
         return BACKEND_URL + "repository/" + owner + "/" + repo + "/commits"; 
     }
+
+    public static String REPOSITORY_PULL_REQUESTS_LIFE_AVG(String owner, String repo){ 
+        return BACKEND_URL + "repository/" + owner + "/" + repo + "/pull-requests/life-avg"; 
+    }
 }

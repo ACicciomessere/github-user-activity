@@ -6,11 +6,14 @@ import edu.itba.useractivity.application.usecases.GetRepositoryMergedPullRequest
 import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsLifeAvgUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsUseCase;
 import edu.itba.useractivity.domain.models.Commit;
+import edu.itba.useractivity.domain.models.CommitsResponse;
 import edu.itba.useractivity.domain.models.PullRequest;
 import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
+import edu.itba.useractivity.domain.models.UserParticipation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +73,7 @@ class RepositoryServiceTest {
     }
 
     @Test
-    @DisplayName("getCommits delega en GetRepositoryCommitsUseCase y devuelve su resultado")
+    @DisplayName("getCommits delega en GetRepositoryCommitsUseCase y devuelve CommitsResponse")
     void getCommits_delegates() {
         GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
         GetRepositoryCommitsUseCase getCommits = mock(GetRepositoryCommitsUseCase.class);
@@ -83,13 +86,17 @@ class RepositoryServiceTest {
         int page = 3, perPage = 10;
 
         Commit c1 = mock(Commit.class), c2 = mock(Commit.class);
-        List<Commit> expected = List.of(c1, c2);
+        List<Commit> commits = List.of(c1, c2);
+        List<UserParticipation> participations = Collections.emptyList();
+        CommitsResponse expected = new CommitsResponse(commits, participations);
 
         when(getCommits.execute(owner, repo, page, perPage)).thenReturn(expected);
 
-        List<Commit> result = service.getCommits(owner, repo, page, perPage);
+        CommitsResponse result = service.getCommits(owner, repo, page, perPage);
 
         assertThat(result).isSameAs(expected);
+        assertThat(result.commits()).isEqualTo(commits);
+        assertThat(result.userParticipations()).isEqualTo(participations);
         verify(getCommits).execute(eq(owner), eq(repo), eq(page), eq(perPage));
         verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs, getLifeAvg);
     }
