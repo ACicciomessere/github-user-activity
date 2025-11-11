@@ -3,8 +3,11 @@ package infraestructure.adapters.driven.github;
 import edu.itba.useractivity.domain.enums.EventType;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.GitHubEventAdapter;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ExternalServiceException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubServerException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.RateLimitExceededException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -133,7 +136,24 @@ class GitHubEventAdapterTest {
     }
 
     @Test
-    @DisplayName(">=400 genérico: lanza ExternalServiceException")
+    @DisplayName("401 Unauthorized: lanza GitHubClientException")
+    void getEventsByUser_401() throws Exception {
+        HttpClient http = mockHttpClient();
+        HttpResponse<String> resp = mockResponse();
+        when(resp.statusCode()).thenReturn(401);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubEventAdapter adapter = new GitHubEventAdapter();
+            assertThatThrownBy(() -> adapter.getEventsByUser("unauthorized", 1, 10))
+                    .isInstanceOf(GitHubClientException.class);
+        }
+    }
+
+    @Test
+    @DisplayName(">=500 server error: lanza GitHubServerException")
     void getEventsByUser_500() throws Exception {
         HttpClient http = mockHttpClient();
         HttpResponse<String> resp = mockResponse();
@@ -145,7 +165,24 @@ class GitHubEventAdapterTest {
 
             GitHubEventAdapter adapter = new GitHubEventAdapter();
             assertThatThrownBy(() -> adapter.getEventsByUser("testuser", 1, 10))
-                    .isInstanceOf(ExternalServiceException.class);
+                    .isInstanceOf(GitHubServerException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("Unhandled status (418): lanza GitHubApiException")
+    void getEventsByUser_unhandledStatus() throws Exception {
+        HttpClient http = mockHttpClient();
+        HttpResponse<String> resp = mockResponse();
+        when(resp.statusCode()).thenReturn(418); // Teapot 😉
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubEventAdapter adapter = new GitHubEventAdapter();
+            assertThatThrownBy(() -> adapter.getEventsByUser("testuser", 1, 10))
+                    .isInstanceOf(GitHubApiException.class);
         }
     }
 
@@ -163,8 +200,7 @@ class GitHubEventAdapterTest {
 
             assertThatThrownBy(() -> adapter.getEventsByUser("testuser", 1, 10))
                     .isInstanceOf(ExternalServiceException.class);
-            // (opcional) limpiar flag por si quedó seteado
-            Thread.interrupted();
+            Thread.interrupted(); // limpiar flag
         }
     }
 
@@ -183,9 +219,43 @@ class GitHubEventAdapterTest {
                 adapter.getEventsByUser("testuser", 1, 10);
             } catch (ExternalServiceException e) {
                 assertTrue(Thread.currentThread().isInterrupted(), "El flag de interrupción debería estar seteado");
-                // limpiar flag para no afectar otros tests
                 Thread.interrupted();
             }
         }
     }
+
+    @Test
+    @DisplayName("400 Bad Request: lanza GitHubClientException")
+    void getEventsByUser_400() throws Exception {
+        HttpClient http = mockHttpClient();
+        HttpResponse<String> resp = mockResponse();
+        when(resp.statusCode()).thenReturn(400);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubEventAdapter adapter = new GitHubEventAdapter();
+            assertThatThrownBy(() -> adapter.getEventsByUser("u", 1, 10))
+                    .isInstanceOf(edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("422 Unprocessable Entity: lanza GitHubClientException")
+    void getEventsByUser_422() throws Exception {
+        HttpClient http = mockHttpClient();
+        HttpResponse<String> resp = mockResponse();
+        when(resp.statusCode()).thenReturn(422);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubEventAdapter adapter = new GitHubEventAdapter();
+            assertThatThrownBy(() -> adapter.getEventsByUser("u", 1, 10))
+                    .isInstanceOf(edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException.class);
+        }
+    }
+
 }

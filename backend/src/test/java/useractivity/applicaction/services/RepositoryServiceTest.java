@@ -3,9 +3,11 @@ package useractivity.applicaction.services;
 import edu.itba.useractivity.application.services.RepositoryService;
 import edu.itba.useractivity.application.usecases.GetRepositoryCommitsUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryMergedPullRequestsUseCase;
+import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsLifeAvgUseCase;
 import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsUseCase;
 import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
+import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,12 +22,12 @@ class RepositoryServiceTest {
     @Test
     @DisplayName("getPullRequests delega en GetRepositoryPullRequestsUseCase y devuelve su resultado")
     void getPullRequests_delegates() {
-        // mocks
         GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
         GetRepositoryCommitsUseCase getCommits = mock(GetRepositoryCommitsUseCase.class);
         GetRepositoryMergedPullRequestsUseCase getMergedPRs = mock(GetRepositoryMergedPullRequestsUseCase.class);
+        GetRepositoryPullRequestsLifeAvgUseCase getLifeAvg = mock(GetRepositoryPullRequestsLifeAvgUseCase.class);
 
-        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs);
+        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs, getLifeAvg);
 
         String owner = "itba", repo = "user-activity";
         int page = 2, perPage = 5;
@@ -35,13 +37,11 @@ class RepositoryServiceTest {
 
         when(getPRs.execute(owner, repo, page, perPage)).thenReturn(expected);
 
-        // when
         List<PullRequest> result = service.getPullRequests(owner, repo, page, perPage);
 
-        // then
         assertThat(result).isSameAs(expected);
         verify(getPRs).execute(eq(owner), eq(repo), eq(page), eq(perPage));
-        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs);
+        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs, getLifeAvg);
     }
 
     @Test
@@ -50,8 +50,9 @@ class RepositoryServiceTest {
         GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
         GetRepositoryCommitsUseCase getCommits = mock(GetRepositoryCommitsUseCase.class);
         GetRepositoryMergedPullRequestsUseCase getMergedPRs = mock(GetRepositoryMergedPullRequestsUseCase.class);
+        GetRepositoryPullRequestsLifeAvgUseCase getLifeAvg = mock(GetRepositoryPullRequestsLifeAvgUseCase.class);
 
-        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs);
+        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs, getLifeAvg);
 
         String owner = "org", repo = "proj";
         int page = 1, perPage = 30;
@@ -65,7 +66,7 @@ class RepositoryServiceTest {
 
         assertThat(result).isSameAs(expected);
         verify(getMergedPRs).execute(eq(owner), eq(repo), eq(page), eq(perPage));
-        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs);
+        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs, getLifeAvg);
     }
 
     @Test
@@ -74,8 +75,9 @@ class RepositoryServiceTest {
         GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
         GetRepositoryCommitsUseCase getCommits = mock(GetRepositoryCommitsUseCase.class);
         GetRepositoryMergedPullRequestsUseCase getMergedPRs = mock(GetRepositoryMergedPullRequestsUseCase.class);
+        GetRepositoryPullRequestsLifeAvgUseCase getLifeAvg = mock(GetRepositoryPullRequestsLifeAvgUseCase.class);
 
-        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs);
+        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs, getLifeAvg);
 
         String owner = "team", repo = "lib";
         int page = 3, perPage = 10;
@@ -89,6 +91,29 @@ class RepositoryServiceTest {
 
         assertThat(result).isSameAs(expected);
         verify(getCommits).execute(eq(owner), eq(repo), eq(page), eq(perPage));
-        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs);
+        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs, getLifeAvg);
+    }
+
+    @Test
+    @DisplayName("getPullRequestsLifeAvg delega en GetRepositoryPullRequestsLifeAvgUseCase y devuelve su resultado")
+    void getPullRequestsLifeAvg_delegates() {
+        GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
+        GetRepositoryCommitsUseCase getCommits = mock(GetRepositoryCommitsUseCase.class);
+        GetRepositoryMergedPullRequestsUseCase getMergedPRs = mock(GetRepositoryMergedPullRequestsUseCase.class);
+        GetRepositoryPullRequestsLifeAvgUseCase getLifeAvg = mock(GetRepositoryPullRequestsLifeAvgUseCase.class);
+
+        RepositoryService service = new RepositoryService(getPRs, getCommits, getMergedPRs, getLifeAvg);
+
+        String owner = "itba", repo = "protos";
+        PullRequestsLifeAvg avg = mock(PullRequestsLifeAvg.class);
+        List<PullRequestsLifeAvg> expected = List.of(avg);
+
+        when(getLifeAvg.execute(owner, repo)).thenReturn(expected);
+
+        List<PullRequestsLifeAvg> result = service.getPullRequestsLifeAvg(owner, repo);
+
+        assertThat(result).isSameAs(expected);
+        verify(getLifeAvg).execute(eq(owner), eq(repo));
+        verifyNoMoreInteractions(getPRs, getCommits, getMergedPRs, getLifeAvg);
     }
 }

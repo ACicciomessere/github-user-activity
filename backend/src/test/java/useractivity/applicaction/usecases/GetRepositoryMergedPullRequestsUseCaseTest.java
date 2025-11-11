@@ -1,73 +1,63 @@
 package useractivity.applicaction.usecases;
 
+
 import edu.itba.useractivity.application.usecases.GetRepositoryMergedPullRequestsUseCase;
-import edu.itba.useractivity.application.usecases.GetRepositoryPullRequestsUseCase;
 import edu.itba.useractivity.domain.models.PullRequest;
+import edu.itba.useractivity.domain.ports.outbound.RepositoryOutboundPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class GetRepositoryMergedPullRequestsUseCaseTest {
 
     @Test
-    @DisplayName("execute filtra correctamente solo los PullRequests merged")
-    void execute_returnsOnlyMerged() {
-        GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
-        GetRepositoryMergedPullRequestsUseCase useCase = new GetRepositoryMergedPullRequestsUseCase(getPRs);
+    @DisplayName("execute filtra correctamente los PullRequests mergeados")
+    void execute_filtersMergedPullRequests() {
+        RepositoryOutboundPort repoPort = mock(RepositoryOutboundPort.class);
+        GetRepositoryMergedPullRequestsUseCase useCase = new GetRepositoryMergedPullRequestsUseCase(repoPort);
 
-        String owner = "itba";
-        String repo = "backend";
-        int page = 1;
-        int perPage = 5;
+        String owner = "itba", repo = "user-activity";
+        int page = 1, perPage = 10;
 
-        PullRequest pr1 = mock(PullRequest.class);
-        PullRequest pr2 = mock(PullRequest.class);
-        PullRequest pr3 = mock(PullRequest.class);
+        PullRequest merged = mock(PullRequest.class);
+        PullRequest notMerged = mock(PullRequest.class);
 
-        when(pr1.isMerged()).thenReturn(true);
-        when(pr2.isMerged()).thenReturn(false);
-        when(pr3.isMerged()).thenReturn(true);
+        when(merged.isMerged()).thenReturn(true);
+        when(notMerged.isMerged()).thenReturn(false);
 
-        List<PullRequest> all = List.of(pr1, pr2, pr3);
-        when(getPRs.execute(owner, repo, page, perPage)).thenReturn(all);
+        List<PullRequest> all = List.of(merged, notMerged);
+        when(repoPort.getPullRequests(owner, repo, page, perPage)).thenReturn(all);
 
         // when
         List<PullRequest> result = useCase.execute(owner, repo, page, perPage);
 
         // then
-        assertThat(result).containsExactly(pr1, pr3);
-        verify(getPRs).execute(eq(owner), eq(repo), eq(page), eq(perPage));
-        verifyNoMoreInteractions(getPRs);
+        assertThat(result).containsExactly(merged);
+        verify(repoPort).getPullRequests(owner, repo, page, perPage);
+        verifyNoMoreInteractions(repoPort);
     }
 
     @Test
-    @DisplayName("execute devuelve lista vacía cuando no hay PullRequests merged")
-    void execute_returnsEmptyWhenNoneMerged() {
-        GetRepositoryPullRequestsUseCase getPRs = mock(GetRepositoryPullRequestsUseCase.class);
-        GetRepositoryMergedPullRequestsUseCase useCase = new GetRepositoryMergedPullRequestsUseCase(getPRs);
+    @DisplayName("execute devuelve lista vacía si ningún PullRequest está mergeado")
+    void execute_returnsEmptyIfNoneMerged() {
+        RepositoryOutboundPort repoPort = mock(RepositoryOutboundPort.class);
+        GetRepositoryMergedPullRequestsUseCase useCase = new GetRepositoryMergedPullRequestsUseCase(repoPort);
 
-        String owner = "team";
-        String repo = "lib";
-        int page = 2;
-        int perPage = 10;
+        PullRequest p1 = mock(PullRequest.class);
+        PullRequest p2 = mock(PullRequest.class);
+        when(p1.isMerged()).thenReturn(false);
+        when(p2.isMerged()).thenReturn(false);
 
-        PullRequest pr1 = mock(PullRequest.class);
-        PullRequest pr2 = mock(PullRequest.class);
-        when(pr1.isMerged()).thenReturn(false);
-        when(pr2.isMerged()).thenReturn(false);
+        when(repoPort.getPullRequests("o", "r", 1, 10)).thenReturn(List.of(p1, p2));
 
-        List<PullRequest> all = List.of(pr1, pr2);
-        when(getPRs.execute(owner, repo, page, perPage)).thenReturn(all);
-
-        List<PullRequest> result = useCase.execute(owner, repo, page, perPage);
+        List<PullRequest> result = useCase.execute("o", "r", 1, 10);
 
         assertThat(result).isEmpty();
-        verify(getPRs).execute(eq(owner), eq(repo), eq(page), eq(perPage));
-        verifyNoMoreInteractions(getPRs);
+        verify(repoPort).getPullRequests("o", "r", 1, 10);
+        verifyNoMoreInteractions(repoPort);
     }
 }
