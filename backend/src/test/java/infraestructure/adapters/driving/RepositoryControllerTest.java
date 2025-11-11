@@ -2,11 +2,13 @@ package infraestructure.adapters.driving;
 
 import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
+import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driving.RepositoryController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +20,6 @@ class RepositoryControllerTest {
     @Test
     @DisplayName("@ModelAttribute setRepositoryContext setea owner y repository; GET /pull-requests delega ok")
     void getRepositoryPullRequests_ok() {
-        // given
         RepositoryInboundPort port = mock(RepositoryInboundPort.class);
         RepositoryController controller = new RepositoryController(port);
 
@@ -31,15 +32,11 @@ class RepositoryControllerTest {
         PullRequest pr2 = mock(PullRequest.class);
         List<PullRequest> expected = List.of(pr1, pr2);
 
-        // Simula el @ModelAttribute de Spring
         controller.setRepositoryContext(owner, repo);
-
         when(port.getPullRequests(owner, repo, page, perPage)).thenReturn(expected);
 
-        // when
         var response = controller.getRepositoryPullRequests(page, perPage);
 
-        // then
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isSameAs(expected);
         verify(port).getPullRequests(eq(owner), eq(repo), eq(page), eq(perPage));
@@ -49,7 +46,6 @@ class RepositoryControllerTest {
     @Test
     @DisplayName("@ModelAttribute + GET /pull-requests/merged delega a getMergedPullRequests")
     void getMergedPullRequests_ok() {
-        // given
         RepositoryInboundPort port = mock(RepositoryInboundPort.class);
         RepositoryController controller = new RepositoryController(port);
 
@@ -64,10 +60,8 @@ class RepositoryControllerTest {
         controller.setRepositoryContext(owner, repo);
         when(port.getMergedPullRequests(owner, repo, page, perPage)).thenReturn(expected);
 
-        // when
         var response = controller.getMergedPullRequests(page, perPage);
 
-        // then
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isSameAs(expected);
         verify(port).getMergedPullRequests(eq(owner), eq(repo), eq(page), eq(perPage));
@@ -77,7 +71,6 @@ class RepositoryControllerTest {
     @Test
     @DisplayName("@ModelAttribute + GET /commits delega a getCommits")
     void getRepositoryCommits_ok() {
-        // given
         RepositoryInboundPort port = mock(RepositoryInboundPort.class);
         RepositoryController controller = new RepositoryController(port);
 
@@ -93,13 +86,36 @@ class RepositoryControllerTest {
         controller.setRepositoryContext(owner, repo);
         when(port.getCommits(owner, repo, page, perPage)).thenReturn(expected);
 
-        // when
         var response = controller.getRepositoryCommits(page, perPage);
 
-        // then
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isSameAs(expected);
         verify(port).getCommits(eq(owner), eq(repo), eq(page), eq(perPage));
+        verifyNoMoreInteractions(port);
+    }
+
+    @Test
+    @DisplayName("@ModelAttribute + GET /pull-requests/life-avg delega a getPullRequestsLifeAvg")
+    void getPullRequestsLifeAvg_ok() {
+        RepositoryInboundPort port = mock(RepositoryInboundPort.class);
+        RepositoryController controller = new RepositoryController(port);
+
+        String owner = "itba";
+        String repo = "ua";
+
+        List<PullRequestsLifeAvg> expected = List.of(
+                new PullRequestsLifeAvg("2025-01", Duration.ofHours(12), 3),
+                new PullRequestsLifeAvg("2025-02", Duration.ofHours(8), 2)
+        );
+
+        controller.setRepositoryContext(owner, repo);
+        when(port.getPullRequestsLifeAvg(owner, repo)).thenReturn(expected);
+
+        var response = controller.getPullRequestsLifeAvg();
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).isSameAs(expected);
+        verify(port).getPullRequestsLifeAvg(eq(owner), eq(repo));
         verifyNoMoreInteractions(port);
     }
 }
