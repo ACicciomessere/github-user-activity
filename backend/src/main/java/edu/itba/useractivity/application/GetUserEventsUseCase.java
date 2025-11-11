@@ -10,9 +10,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class GetUserEventsUseCase {
+
     private final EventDataPort eventDataPort;
 
-    public List<Event> execute(String username) {
-        return eventDataPort.getEventsByUser(username);
+    public List<Event> execute(String username, int page, int perPage) {
+        return eventDataPort.getEventsByUser(username, page, perPage);
     }
 }

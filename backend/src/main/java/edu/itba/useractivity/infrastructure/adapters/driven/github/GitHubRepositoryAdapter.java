@@ -31,10 +31,10 @@ public class GitHubRepositoryAdapter implements RepositoryDataPort {
     }
 
     @Override
-    public List<PullRequest> getPullRequests(String ownerName, String repositoryName) {
+    public List<PullRequest> getPullRequests(String ownerName, String repositoryName, int page, int perPage) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/repos/" + ownerName + "/" + repositoryName + "/pulls?state=all"))
+                    .uri(URI.create("https://api.github.com/repos/" + ownerName + "/" + repositoryName + "/pulls?state=all&page=" + page + "&per_page=" + perPage))
                     .header("Accept", "application/vnd.github+json")
                     .GET()
                     .build();
@@ -60,10 +60,10 @@ public class GitHubRepositoryAdapter implements RepositoryDataPort {
     }
 
     @Override
-    public List<Commit> getCommits(String ownerName, String repositoryName) {
+    public List<Commit> getCommits(String ownerName, String repositoryName, int page, int perPage) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/repos/" + ownerName + "/" + repositoryName + "/commits"))
+                    .uri(URI.create("https://api.github.com/repos/" + ownerName + "/" + repositoryName + "/commits?page=" + page + "&per_page=" + perPage))
                     .header("Accept", "application/vnd.github+json")
                     .GET()
                     .build();

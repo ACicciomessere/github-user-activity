@@ -12,7 +12,7 @@ import java.util.List;
 public class GetRepositoryPullRequestsUseCase {
     private final RepositoryDataPort repositoryDataPort;
 
-    public List<PullRequest> execute(String ownerName, String repositoryName) {
-        return repositoryDataPort.getPullRequests(ownerName, repositoryName);
+    public List<PullRequest> execute(String ownerName, String repositoryName, int page, int perPage) {
+        return repositoryDataPort.getPullRequests(ownerName, repositoryName, page, perPage);
     }
 }

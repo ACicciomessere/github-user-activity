@@ -32,20 +32,29 @@ public class RepositoryController {
     }
 
     @GetMapping("/pull-requests")
-    public ResponseEntity<List<PullRequest>> getRepositoryPullRequests() {
-        List<PullRequest> pullRequests = getRepositoryPullRequestsUseCase.execute(owner, repository);
+    public ResponseEntity<List<PullRequest>> getRepositoryPullRequests(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "per_page", defaultValue = "30") int perPage
+    ) {
+        List<PullRequest> pullRequests = getRepositoryPullRequestsUseCase.execute(owner, repository, page, perPage);
         return ResponseEntity.ok(pullRequests);
     }
 
     @GetMapping("/pull-requests/merged")
-    public ResponseEntity<List<PullRequest>> getMergedPullRequests() {
-        List<PullRequest> mergedPRs = getMergedPullRequestsUseCase.execute(owner, repository);
+    public ResponseEntity<List<PullRequest>> getMergedPullRequests(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "per_page", defaultValue = "30") int perPage
+    ) {
+        List<PullRequest> mergedPRs = getMergedPullRequestsUseCase.execute(owner, repository, page, perPage);
         return ResponseEntity.ok(mergedPRs);
     }
 
     @GetMapping("/commits")
-    public ResponseEntity<List<Commit>> getRepositoryCommits() {
-        List<Commit> commits = getRepositoryCommits.execute(owner, repository);
+    public ResponseEntity<List<Commit>> getRepositoryCommits(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "per_page", defaultValue = "30") int perPage
+    ) {
+        List<Commit> commits = getRepositoryCommits.execute(owner, repository, page, perPage);
         return ResponseEntity.ok(commits);
     }
 }
