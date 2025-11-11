@@ -96,11 +96,16 @@ public class App {
                             cursor: pointer;
                             transition: transform 0.2s;
                         }
-                        button:hover {
+                        button:hover:not(:disabled) {
                             transform: translateY(-2px);
                         }
-                        button:active {
+                        button:active:not(:disabled) {
                             transform: translateY(0);
+                        }
+                        button:disabled {
+                            background: #ccc;
+                            cursor: not-allowed;
+                            opacity: 0.6;
                         }
                         #loading {
                             display: none;
@@ -464,6 +469,11 @@ public class App {
                             const error = document.getElementById('error');
                             const results = document.getElementById('results');
                             const pagination = document.getElementById('pagination');
+                            const searchButton = document.querySelector('button[onclick="fetchEvents()"]');
+                            const clearButton = document.querySelector('button[onclick="clearEvents()"]');
+
+                            if (searchButton) searchButton.disabled = true;
+                            if (clearButton) clearButton.disabled = true;
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
@@ -502,6 +512,11 @@ public class App {
                                 loading.style.display = 'none';
                                 pagination.style.display = 'none';
                                 showError('Failed to fetch events: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            } finally {
+                                const searchButton = document.querySelector('button[onclick="fetchEvents()"]');
+                                const clearButton = document.querySelector('button[onclick="clearEvents()"]');
+                                if (searchButton) searchButton.disabled = false;
+                                if (clearButton) clearButton.disabled = false;
                             }
                         }
                         
@@ -628,6 +643,8 @@ public class App {
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
                             const pagination = document.getElementById('repo-pagination');
+                            const buttons = document.querySelectorAll('.button-group button');
+                            buttons.forEach(btn => btn.disabled = true);
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
@@ -666,6 +683,9 @@ public class App {
                                 loading.style.display = 'none';
                                 pagination.style.display = 'none';
                                 showRepoError('Failed to fetch pull requests: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            } finally {
+                                const buttons = document.querySelectorAll('.button-group button');
+                                buttons.forEach(btn => btn.disabled = false);
                             }
                         }
 
@@ -686,6 +706,8 @@ public class App {
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
                             const pagination = document.getElementById('repo-pagination');
+                            const buttons = document.querySelectorAll('.button-group button');
+                            buttons.forEach(btn => btn.disabled = true);
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
@@ -724,6 +746,9 @@ public class App {
                                 loading.style.display = 'none';
                                 pagination.style.display = 'none';
                                 showRepoError('Failed to fetch merged pull requests: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            } finally {
+                                const buttons = document.querySelectorAll('.button-group button');
+                                buttons.forEach(btn => btn.disabled = false);
                             }
                         }
 
@@ -744,6 +769,8 @@ public class App {
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
                             const pagination = document.getElementById('repo-pagination');
+                            const buttons = document.querySelectorAll('.button-group button');
+                            buttons.forEach(btn => btn.disabled = true);
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
@@ -786,6 +813,9 @@ public class App {
                                 loading.style.display = 'none';
                                 pagination.style.display = 'none';
                                 showRepoError('Failed to fetch commits: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            } finally {
+                                const buttons = document.querySelectorAll('.button-group button');
+                                buttons.forEach(btn => btn.disabled = false);
                             }
                         }
 
@@ -804,6 +834,8 @@ public class App {
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
                             const pagination = document.getElementById('repo-pagination');
+                            const buttons = document.querySelectorAll('.button-group button');
+                            buttons.forEach(btn => btn.disabled = true);
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
@@ -832,6 +864,9 @@ public class App {
                             } catch (err) {
                                 loading.style.display = 'none';
                                 showRepoError('Failed to fetch pull requests life average: ' + err.message + '. Make sure the backend is running on localhost:8080');
+                            } finally {
+                                const buttons = document.querySelectorAll('.button-group button');
+                                buttons.forEach(btn => btn.disabled = false);
                             }
                         }
                         
