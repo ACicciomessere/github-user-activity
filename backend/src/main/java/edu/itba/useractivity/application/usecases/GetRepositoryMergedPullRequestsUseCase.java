@@ -1,4 +1,4 @@
-package edu.itba.useractivity.application;
+package edu.itba.useractivity.application.usecases;
 
 import edu.itba.useractivity.domain.models.PullRequest;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
-package edu.itba.useractivity.application;
+package edu.itba.useractivity.application.usecases;
 
 import edu.itba.useractivity.domain.models.Event;
-import edu.itba.useractivity.domain.models.EventType;
+import edu.itba.useractivity.domain.enums.EventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

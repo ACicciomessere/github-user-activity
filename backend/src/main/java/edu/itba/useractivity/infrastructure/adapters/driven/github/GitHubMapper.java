@@ -1,7 +1,9 @@
 package edu.itba.useractivity.infrastructure.adapters.driven.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import edu.itba.useractivity.domain.enums.PullRequestAction;
 import edu.itba.useractivity.domain.models.*;
+import edu.itba.useractivity.domain.enums.EventType;
 import lombok.RequiredArgsConstructor;
 
 import java.time.ZonedDateTime;
@@ -94,7 +96,7 @@ public class GitHubMapper {
         };
     }
 
-    private PushEvent mapToPushEvent(JsonNode node) {
+    public PushEvent mapToPushEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         List<Commit> commits = StreamSupport.stream(payload.path("commits").spliterator(), false)
                 .map(this::mapToCommit)
@@ -126,7 +128,7 @@ public class GitHubMapper {
                 .build();
     }
 
-    private ForkEvent mapToForkEvent(JsonNode node) {
+    public ForkEvent mapToForkEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         return ForkEvent.builder()
                 .id(node.path("id").asText())
@@ -138,7 +140,7 @@ public class GitHubMapper {
                 .build();
     }
 
-    private CreateEvent mapToCreateEvent(JsonNode node) {
+    public CreateEvent mapToCreateEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         return CreateEvent.builder()
                 .id(node.path("id").asText())
@@ -153,4 +155,3 @@ public class GitHubMapper {
                 .build();
     }
 }
-

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
-import edu.itba.useractivity.domain.ports.outbound.RepositoryDataPort;
+import edu.itba.useractivity.domain.ports.outbound.RepositoryOutboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubServerException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional; // <-- Importado
 
 @Component
-public class GitHubRepositoryAdapter implements RepositoryDataPort {
+public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
 
     private final GitHubMapper mapper;
     private final ObjectMapper objectMapper;

@@ -1,9 +1,8 @@
 package edu.itba.useractivity.infrastructure.adapters.driving;
 
-import edu.itba.useractivity.application.GetUserEventsByTypeUseCase;
-import edu.itba.useractivity.application.GetUserEventsUseCase;
 import edu.itba.useractivity.domain.models.Event;
-import edu.itba.useractivity.domain.models.EventType;
+import edu.itba.useractivity.domain.enums.EventType;
+import edu.itba.useractivity.domain.ports.inbound.EventInboundPort;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,8 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class EventController {
 
-    private final GetUserEventsUseCase getUserEventsUseCase;
-    private final GetUserEventsByTypeUseCase getUserEventsByTypeUseCase;
+    private final EventInboundPort eventInboundPort;
 
     @GetMapping("/user/{username}")
     public ResponseEntity<List<Event>> getEvents(
@@ -23,7 +21,7 @@ public class EventController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "per_page", defaultValue = "30") int perPage
     ) {
-        List<Event> events = getUserEventsUseCase.execute(username, page, perPage);
+        List<Event> events = eventInboundPort.getUserEvents(username, page, perPage);
         return ResponseEntity.ok(events);
     }
 
@@ -38,7 +36,7 @@ public class EventController {
         if (type == null) {
             throw new IllegalArgumentException("Invalid event type: " + eventType);
         }
-        List<Event> events = getUserEventsByTypeUseCase.execute(type, username, page, perPage);
+        List<Event> events = eventInboundPort.getUserEventsByType(type, username, page, perPage);
         return ResponseEntity.ok(events);
     }
 }

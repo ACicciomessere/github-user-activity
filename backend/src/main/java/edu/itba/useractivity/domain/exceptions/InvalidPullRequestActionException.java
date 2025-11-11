@@ -1,4 +1,4 @@
-package edu.itba.useractivity.domain.models.exceptions;
+package edu.itba.useractivity.domain.exceptions;
 
 public class InvalidPullRequestActionException extends RuntimeException {
     public InvalidPullRequestActionException(String action) {

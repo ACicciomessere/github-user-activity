@@ -1,5 +1,6 @@
 package edu.itba.useractivity.domain.models;
 
+import edu.itba.useractivity.domain.enums.PullRequestAction;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
