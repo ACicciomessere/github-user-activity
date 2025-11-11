@@ -10,9 +10,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class GetRepositoryPullRequestsUseCase {
-    private final RepositoryOutboundPort repositoryDataPort;
+    private final RepositoryOutboundPort repositoryOutboundPort;
 
     public List<PullRequest> execute(String ownerName, String repositoryName, int page, int perPage) {
-        return repositoryDataPort.getPullRequests(ownerName, repositoryName, page, perPage);
+        return repositoryOutboundPort.getPullRequests(ownerName, repositoryName, page, perPage);
     }
 }

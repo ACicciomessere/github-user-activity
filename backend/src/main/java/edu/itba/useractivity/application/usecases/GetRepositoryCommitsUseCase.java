@@ -10,10 +10,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class GetRepositoryCommitsUseCase {
-    private final RepositoryOutboundPort repositoryDataPort;
+    private final RepositoryOutboundPort repositoryOutboundPort;
 
     public List<Commit> execute(String ownerName, String repositoryName, int page, int perPage) {
-        return repositoryDataPort.getCommits(ownerName, repositoryName, page, perPage);
+        return repositoryOutboundPort.getCommits(ownerName, repositoryName, page, perPage);
     }
 }
 
