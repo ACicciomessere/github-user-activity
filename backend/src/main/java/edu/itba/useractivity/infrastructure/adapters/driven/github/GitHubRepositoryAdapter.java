@@ -8,6 +8,7 @@ import edu.itba.useractivity.domain.ports.outbound.RepositoryOutboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubServerException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ApiErrorCode; // <-- Importado
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
@@ -28,6 +30,27 @@ public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
         this.mapper = new GitHubMapper();
         this.objectMapper = new ObjectMapper();
         this.client = HttpClient.newHttpClient();
+    }
+
+    private void handleGitHubError(int statusCode, String resource, String resourceType) {
+        if (statusCode == 200) {
+            return;
+        }
+
+        Optional<ApiErrorCode> errorCode = ApiErrorCode.fromStatusCode(statusCode);
+
+        if (errorCode.isPresent()) {
+            switch (errorCode.get()) {
+                case NOT_FOUND ->
+                        throw new ResourceNotFoundException(resourceType + " not found for " + resource);
+                case FORBIDDEN, UNAUTHORIZED, BAD_REQUEST, UNPROCESSABLE_ENTITY ->
+                        throw new GitHubClientException(statusCode, "Client error when fetching " + resourceType.toLowerCase() + " for " + resource);
+            }
+        } else if (ApiErrorCode.isServerError(statusCode)) {
+            throw new GitHubServerException(statusCode, "GitHub server error while fetching " + resourceType.toLowerCase() + " for " + resource);
+        }
+
+        throw new GitHubClientException(statusCode, "Unhandled status code when fetching " + resourceType.toLowerCase() + " for " + resource);
     }
 
     @Override
@@ -43,13 +66,8 @@ public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
 
             int statusCode = response.statusCode();
             String resource = String.format("%s/%s", ownerName, repositoryName);
-            if (statusCode == 404) {
-                throw new ResourceNotFoundException("Pull requests not found for " + resource);
-            } else if (statusCode >= 400 && statusCode < 500) {
-                throw new GitHubClientException(statusCode, "Client error when fetching pull requests for " + resource);
-            } else if (statusCode >= 500) {
-                throw new GitHubServerException(statusCode, "GitHub server error while fetching pull requests for " + resource);
-            }
+
+            handleGitHubError(statusCode, resource, "Pull requests");
 
             JsonNode rootNode = objectMapper.readTree(response.body());
             return mapper.mapToPullRequests(rootNode);
@@ -72,13 +90,8 @@ public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
 
             int statusCode = response.statusCode();
             String resource = String.format("%s/%s", ownerName, repositoryName);
-            if (statusCode == 404) {
-                throw new ResourceNotFoundException("Commits not found for " + resource);
-            } else if (statusCode >= 400 && statusCode < 500) {
-                throw new GitHubClientException(statusCode, "Client error when fetching commits for" + resource);
-            } else if (statusCode >= 500) {
-                throw new GitHubServerException(statusCode, "GitHub server error while fetching commits for" + resource);
-            }
+
+            handleGitHubError(statusCode, resource, "Commits");
 
             JsonNode rootNode = objectMapper.readTree(response.body());
             return mapper.mapToCommits(rootNode);
