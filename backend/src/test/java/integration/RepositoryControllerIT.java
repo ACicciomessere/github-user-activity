@@ -58,13 +58,14 @@ class RepositoryControllerIT {
     }
 
     @Test
-    @DisplayName("GET /repository/{owner}/{repo}/commits devuelve commits (usa tu modelo con 5 campos)")
+    @DisplayName("GET /repository/{owner}/{repo}/commits devuelve commits correctamente (estructura con commits + userParticipations)")
     void getCommits_ok() throws Exception {
         Commit c = new Commit(
                 "sha-1", "msg", "author",
                 ZonedDateTime.parse("2025-11-08T12:00:00Z"),
                 "https://commit/sha-1"
         );
+
         Mockito.when(repositoryInboundPort.getCommits(eq("itba"), eq("repo"), eq(1), eq(30)))
                 .thenReturn(new CommitsResponse(
                         List.of(c),
@@ -73,9 +74,12 @@ class RepositoryControllerIT {
 
         mvc.perform(get("/repository/itba/repo/commits"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].sha", is("sha-1")))
-                .andExpect(jsonPath("$[0].authorName", is("author")))
-                .andExpect(jsonPath("$[0].htmlUrl", is("https://commit/sha-1")));
+                .andExpect(content().contentType("application/json"))
+                // ✅ Accedemos correctamente al array dentro de la propiedad "commits"
+                .andExpect(jsonPath("$.commits[0].sha", is("sha-1")))
+                .andExpect(jsonPath("$.commits[0].authorName", is("author")))
+                .andExpect(jsonPath("$.commits[0].htmlUrl", is("https://commit/sha-1")))
+                .andExpect(jsonPath("$.userParticipations", hasSize(0)));
     }
 
     @Test
