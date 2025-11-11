@@ -3,6 +3,7 @@ package infraestructure.adapters.driven.github;
 import edu.itba.useractivity.domain.enums.EventType;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.GitHubEventAdapter;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ExternalServiceException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubServerException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.RateLimitExceededException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -145,7 +146,7 @@ class GitHubEventAdapterTest {
 
             GitHubEventAdapter adapter = new GitHubEventAdapter();
             assertThatThrownBy(() -> adapter.getEventsByUser("testuser", 1, 10))
-                    .isInstanceOf(ExternalServiceException.class);
+                    .isInstanceOf(GitHubServerException.class);
         }
     }
 
