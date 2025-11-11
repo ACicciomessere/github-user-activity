@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class GetUserEventsByTypeUseCaseTest {
@@ -32,8 +33,7 @@ class GetUserEventsByTypeUseCaseTest {
         when(e2.getType()).thenReturn(EventType.FORK);
         when(e3.getType()).thenReturn(EventType.PUSH);
 
-        List<Event> events = List.of(e1, e2, e3);
-        when(getUserEventsUseCase.execute(username, page, perPage)).thenReturn(events);
+        when(getUserEventsUseCase.execute(username, page, perPage)).thenReturn(List.of(e1, e2, e3));
 
         List<Event> result = useCase.execute(EventType.PUSH, username, page, perPage);
 
@@ -93,14 +93,46 @@ class GetUserEventsByTypeUseCaseTest {
         when(getUserEventsUseCase.execute(anyString(), anyInt(), anyInt()))
                 .thenReturn(List.of(mock(Event.class)));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(
-                () -> useCase.execute(null, "u", 1, 10)
-        ).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> useCase.execute(null, "u", 1, 10))
+                .isInstanceOf(NullPointerException.class);
 
         verify(getUserEventsUseCase).execute("u", 1, 10);
         verifyNoMoreInteractions(getUserEventsUseCase);
     }
 
+    @Test
+    @DisplayName("execute filtra fuera eventos cuyo getType() es null (no coinciden)")
+    void execute_eventWithNullType_isFilteredOut() {
+        GetUserEventsUseCase base = mock(GetUserEventsUseCase.class);
+        GetUserEventsByTypeUseCase useCase = new GetUserEventsByTypeUseCase(base);
 
+        Event e1 = mock(Event.class);
+        Event e2 = mock(Event.class);
 
+        when(e1.getType()).thenReturn(null);            // <- caso especial
+        when(e2.getType()).thenReturn(EventType.FORK);  // tampoco coincide
+
+        when(base.execute("u", 1, 10)).thenReturn(List.of(e1, e2));
+
+        var result = useCase.execute(EventType.PUSH, "u", 1, 10);
+
+        assertThat(result).isEmpty();
+        verify(base).execute("u", 1, 10);
+        verifyNoMoreInteractions(base);
+    }
+
+    @Test
+    @DisplayName("execute lanza NullPointerException si el use case base devuelve null")
+    void execute_upstreamReturnsNull_throws() {
+        GetUserEventsUseCase base = mock(GetUserEventsUseCase.class);
+        GetUserEventsByTypeUseCase useCase = new GetUserEventsByTypeUseCase(base);
+
+        when(base.execute(anyString(), anyInt(), anyInt())).thenReturn(null); // <- null en vez de lista
+
+        assertThatThrownBy(() -> useCase.execute(EventType.PUSH, "u", 1, 10))
+                .isInstanceOf(NullPointerException.class); // .stream() sobre null
+
+        verify(base).execute("u", 1, 10);
+        verifyNoMoreInteractions(base);
+    }
 }
