@@ -1,5 +1,6 @@
 package edu.itba.useractivity.infrastructure.adapters.driving;
 
+import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
 import edu.itba.useractivity.domain.models.Commit;
 import edu.itba.useractivity.domain.models.PullRequest;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
@@ -52,5 +53,11 @@ public class RepositoryController {
     ) {
         List<Commit> commits = repositoryInboundPort.getCommits(owner, repository, page, perPage);
         return ResponseEntity.ok(commits);
+    }
+
+    @GetMapping("/pull-requests/life-avg")
+    public ResponseEntity<List<PullRequestsLifeAvg>> getPullRequestsLifeAvg() {
+        List<PullRequestsLifeAvg> pullRequestsLifeAvg = repositoryInboundPort.getPullRequestsLifeAvg(owner, repository);
+        return ResponseEntity.ok(pullRequestsLifeAvg);
     }
 }
