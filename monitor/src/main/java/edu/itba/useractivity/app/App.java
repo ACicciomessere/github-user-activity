@@ -37,7 +37,7 @@ public class App {
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>GitHub User Activity Monitor</title>
+                    <title>User Activity Monitor</title>
                     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
                     <style>
                         * {
@@ -364,12 +364,12 @@ public class App {
                 </head>
                 <body>
                     <div class="container">
-                        <h1>📊 GitHub User Activity Monitor</h1>
+                        <h1>📊 User Activity Monitor</h1>
                         <h2 style="color: white; text-align: center; margin-bottom: 20px; font-size: 1.5em; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">User Events</h2>
                         
                         <div class="search-container">
                             <div class="search-box">
-                                <input type="text" id="username" placeholder="Enter GitHub username..." value="octocat">
+                                <input type="text" id="username" placeholder="Enter username..." value="octocat">
                                 <button onclick="fetchEvents()">🔍 Search</button>
                                 <button onclick="clearEvents()" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">🗑️ Clear</button>
                             </div>
@@ -946,7 +946,7 @@ public class App {
                                     <div class="event-details">
                                         ${pr.user ? `👤 Author: ${pr.user.username || 'Unknown'}` : ''}
                                         ${mergedAt ? `<br>✅ Merged: ${mergedAt}` : ''}
-                                        ${pr.htmlUrl ? `<br><a href="${pr.htmlUrl}" target="_blank">🔗 View on GitHub</a>` : ''}
+                                        ${pr.htmlUrl ? `<br><a href="${pr.htmlUrl}" target="_blank">🔗 View online</a>` : ''}
                                     </div>
                                 `;
                                 
@@ -1003,7 +1003,7 @@ public class App {
                                     </div>
                                     <div class="commit-author">
                                         ${commit.authorName ? `👤 ${commit.authorName}` : ''}
-                                        ${commit.htmlUrl ? `<br><a href="${commit.htmlUrl}" target="_blank">🔗 View on GitHub</a>` : ''}
+                                        ${commit.htmlUrl ? `<br><a href="${commit.htmlUrl}" target="_blank">🔗 View online</a>` : ''}
                                     </div>
                                 `;
                                 
