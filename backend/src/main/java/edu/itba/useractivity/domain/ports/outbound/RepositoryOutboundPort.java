@@ -5,7 +5,7 @@ import edu.itba.useractivity.domain.models.PullRequest;
 
 import java.util.List;
 
-public interface RepositoryDataPort {
+public interface RepositoryOutboundPort {
     List<PullRequest> getPullRequests(String ownerName, String repositoryName, int page, int perPage);
     List<Commit> getCommits(String ownerName, String repositoryName, int page, int perPage);
 }

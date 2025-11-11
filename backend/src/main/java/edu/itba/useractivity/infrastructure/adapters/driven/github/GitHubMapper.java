@@ -1,7 +1,9 @@
 package edu.itba.useractivity.infrastructure.adapters.driven.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import edu.itba.useractivity.domain.enums.PullRequestAction;
 import edu.itba.useractivity.domain.models.*;
+import edu.itba.useractivity.domain.enums.EventType;
 import lombok.RequiredArgsConstructor;
 
 import java.time.ZonedDateTime;

@@ -1,6 +1,6 @@
-package edu.itba.useractivity.domain.models;
+package edu.itba.useractivity.domain.enums;
 
-import edu.itba.useractivity.domain.models.exceptions.InvalidEventTypeException;
+import edu.itba.useractivity.domain.exceptions.InvalidEventTypeException;
 import lombok.Getter;
 
 import java.util.Arrays;

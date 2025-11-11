@@ -3,7 +3,7 @@ package edu.itba.useractivity.infrastructure.adapters.driven.github;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.itba.useractivity.domain.models.Event;
-import edu.itba.useractivity.domain.ports.outbound.EventDataPort;
+import edu.itba.useractivity.domain.ports.outbound.EventOutboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ExternalServiceException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.RateLimitExceededException;
@@ -17,7 +17,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Component
-public class GitHubEventAdapter implements EventDataPort {
+public class GitHubEventAdapter implements EventOutboundPort {
 
     private final GitHubMapper mapper;
     private final ObjectMapper objectMapper;

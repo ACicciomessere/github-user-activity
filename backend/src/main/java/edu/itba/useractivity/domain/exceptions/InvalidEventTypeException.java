@@ -1,4 +1,4 @@
-package edu.itba.useractivity.domain.models.exceptions;
+package edu.itba.useractivity.domain.exceptions;
 
 public class InvalidEventTypeException extends RuntimeException {
     public InvalidEventTypeException(String eventName) {
