@@ -247,6 +247,51 @@ public class App {
                         .button-group button {
                             flex: 1;
                         }
+                        .pagination {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            gap: 10px;
+                            margin-top: 20px;
+                            padding: 20px;
+                            background: white;
+                            border-radius: 10px;
+                            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                        }
+                        .pagination button {
+                            padding: 10px 20px;
+                            font-size: 14px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            transition: transform 0.2s;
+                        }
+                        .pagination button:hover:not(:disabled) {
+                            transform: translateY(-2px);
+                        }
+                        .pagination button:disabled {
+                            background: #ccc;
+                            cursor: not-allowed;
+                            opacity: 0.6;
+                        }
+                        .pagination-info {
+                            color: #333;
+                            font-size: 16px;
+                            font-weight: 500;
+                        }
+                        .pagination select {
+                            padding: 8px 12px;
+                            font-size: 14px;
+                            border: 2px solid #e0e0e0;
+                            border-radius: 5px;
+                            outline: none;
+                            cursor: pointer;
+                        }
+                        .pagination select:focus {
+                            border-color: #667eea;
+                        }
                     </style>
                 </head>
                 <body>
@@ -265,6 +310,19 @@ public class App {
                         </div>
                         
                         <div id="results"></div>
+                        <div id="pagination" class="pagination" style="display: none;">
+                            <button id="prevPage" onclick="previousPage()">← Anterior</button>
+                            <span class="pagination-info">
+                                Página <span id="currentPage">1</span>
+                            </span>
+                            <select id="perPage" onchange="changePerPage()">
+                                <option value="10">10 por página</option>
+                                <option value="30" selected>30 por página</option>
+                                <option value="50">50 por página</option>
+                                <option value="100">100 por página</option>
+                            </select>
+                            <button id="nextPage" onclick="nextPage()">Siguiente →</button>
+                        </div>
                     </div>
                     
                     <div class="container">
@@ -279,24 +337,50 @@ public class App {
                                 <button onclick="fetchPullRequests()">🔀 Pull Requests</button>
                                 <button onclick="fetchMergedPullRequests()">✅ Merged PRs</button>
                                 <button onclick="fetchCommits()">📝 Commits</button>
+                                <button onclick="clearRepoResults()" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">🗑️ Clear</button>
                             </div>
                             <div id="repo-loading">Loading...</div>
                             <div id="repo-error"></div>
                         </div>
                         
                         <div id="repo-results"></div>
+                        <div id="repo-pagination" class="pagination" style="display: none;">
+                            <button id="repoPrevPage" onclick="repoPreviousPage()">← Anterior</button>
+                            <span class="pagination-info">
+                                Página <span id="repoCurrentPage">1</span>
+                            </span>
+                            <select id="repoPerPage" onchange="repoChangePerPage()">
+                                <option value="10">10 por página</option>
+                                <option value="30" selected>30 por página</option>
+                                <option value="50">50 por página</option>
+                                <option value="100">100 por página</option>
+                            </select>
+                            <button id="repoNextPage" onclick="repoNextPage()">Siguiente →</button>
+                        </div>
                     </div>
 
                     <script>
+                        // Estado de paginación para eventos de usuario
+                        let currentPage = 1;
+                        let currentPerPage = 30;
+                        let lastEventsCount = 0;
+                        
+                        // Estado de paginación para repositorio
+                        let repoCurrentPage = 1;
+                        let repoCurrentPerPage = 30;
+                        let lastRepoItemsCount = 0;
+                        let currentRepoType = null; // 'pr', 'merged', 'commits'
+                        
                         const usernameInput = document.getElementById('username');
                         
                         usernameInput.addEventListener('keypress', function(e) {
                             if (e.key === 'Enter') {
+                                currentPage = 1;
                                 fetchEvents();
                             }
                         });
 
-                        async function fetchEvents() {
+                        async function fetchEvents(page = 1) {
                             const username = usernameInput.value.trim();
                             
                             if (!username) {
@@ -304,37 +388,86 @@ public class App {
                                 return;
                             }
 
+                            currentPage = page;
+                            currentPerPage = parseInt(document.getElementById('perPage').value);
+
                             const loading = document.getElementById('loading');
                             const error = document.getElementById('error');
                             const results = document.getElementById('results');
+                            const pagination = document.getElementById('pagination');
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
                             results.innerHTML = '';
 
                             try {
-                                const response = await fetch(`/api/user/${username}`);
+                                const response = await fetch(`/api/user/${username}?page=${currentPage}&per_page=${currentPerPage}`);
                                 
                                 if (!response.ok) {
                                     const errorData = await response.json();
                                     loading.style.display = 'none';
+                                    pagination.style.display = 'none';
                                     showErrorFromResponse(errorData);
                                     return;
                                 }
                                 
                                 const events = await response.json();
                                 loading.style.display = 'none';
+                                lastEventsCount = events.length;
                                 
-                                if (events.length === 0) {
+                                if (events.length === 0 && currentPage === 1) {
+                                    pagination.style.display = 'none';
                                     showError('No events found for this user');
                                     return;
                                 }
                                 
+                                if (events.length === 0 && currentPage > 1) {
+                                    currentPage = 1;
+                                    await fetchEvents(1);
+                                    return;
+                                }
+                                
                                 displayEvents(events);
+                                updatePagination();
                             } catch (err) {
                                 loading.style.display = 'none';
+                                pagination.style.display = 'none';
                                 showError('Failed to fetch events: ' + err.message + '. Make sure the backend is running on localhost:8080');
                             }
+                        }
+                        
+                        function updatePagination() {
+                            const pagination = document.getElementById('pagination');
+                            const currentPageSpan = document.getElementById('currentPage');
+                            const prevButton = document.getElementById('prevPage');
+                            const nextButton = document.getElementById('nextPage');
+                            
+                            currentPageSpan.textContent = currentPage;
+                            prevButton.disabled = currentPage === 1;
+                            nextButton.disabled = lastEventsCount < currentPerPage;
+                            
+                            if (lastEventsCount > 0 || currentPage > 1) {
+                                pagination.style.display = 'flex';
+                            } else {
+                                pagination.style.display = 'none';
+                            }
+                        }
+                        
+                        function previousPage() {
+                            if (currentPage > 1) {
+                                fetchEvents(currentPage - 1);
+                            }
+                        }
+                        
+                        function nextPage() {
+                            if (lastEventsCount >= currentPerPage) {
+                                fetchEvents(currentPage + 1);
+                            }
+                        }
+                        
+                        function changePerPage() {
+                            currentPage = 1;
+                            fetchEvents(1);
                         }
 
                         function showError(message) {
@@ -360,10 +493,14 @@ public class App {
                             const results = document.getElementById('results');
                             const error = document.getElementById('error');
                             const loading = document.getElementById('loading');
+                            const pagination = document.getElementById('pagination');
                             
                             results.innerHTML = '';
                             error.style.display = 'none';
                             loading.style.display = 'none';
+                            pagination.style.display = 'none';
+                            currentPage = 1;
+                            lastEventsCount = 0;
                         }
 
                         function displayEvents(events) {
@@ -405,7 +542,7 @@ public class App {
                         }
 
                         // Repository functions
-                        async function fetchPullRequests() {
+                        async function fetchPullRequests(page = 1) {
                             const owner = document.getElementById('owner').value.trim();
                             const repository = document.getElementById('repository').value.trim();
                             
@@ -414,40 +551,56 @@ public class App {
                                 return;
                             }
 
+                            repoCurrentPage = page;
+                            repoCurrentPerPage = parseInt(document.getElementById('repoPerPage').value);
+                            currentRepoType = 'pr';
+
                             const loading = document.getElementById('repo-loading');
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
+                            const pagination = document.getElementById('repo-pagination');
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
                             results.innerHTML = '';
 
                             try {
-                                const response = await fetch(`/api/repository/${owner}/${repository}/pull-requests`);
+                                const response = await fetch(`/api/repository/${owner}/${repository}/pull-requests?page=${repoCurrentPage}&per_page=${repoCurrentPerPage}`);
                                 
                                 if (!response.ok) {
                                     const errorData = await response.json();
                                     loading.style.display = 'none';
+                                    pagination.style.display = 'none';
                                     showRepoErrorFromResponse(errorData);
                                     return;
                                 }
                                 
                                 const pullRequests = await response.json();
                                 loading.style.display = 'none';
+                                lastRepoItemsCount = pullRequests.length;
                                 
-                                if (pullRequests.length === 0) {
+                                if (pullRequests.length === 0 && repoCurrentPage === 1) {
+                                    pagination.style.display = 'none';
                                     showRepoError('No pull requests found for this repository');
                                     return;
                                 }
                                 
+                                if (pullRequests.length === 0 && repoCurrentPage > 1) {
+                                    repoCurrentPage = 1;
+                                    await fetchPullRequests(1);
+                                    return;
+                                }
+                                
                                 displayPullRequests(pullRequests);
+                                updateRepoPagination();
                             } catch (err) {
                                 loading.style.display = 'none';
+                                pagination.style.display = 'none';
                                 showRepoError('Failed to fetch pull requests: ' + err.message + '. Make sure the backend is running on localhost:8080');
                             }
                         }
 
-                        async function fetchMergedPullRequests() {
+                        async function fetchMergedPullRequests(page = 1) {
                             const owner = document.getElementById('owner').value.trim();
                             const repository = document.getElementById('repository').value.trim();
                             
@@ -456,40 +609,56 @@ public class App {
                                 return;
                             }
 
+                            repoCurrentPage = page;
+                            repoCurrentPerPage = parseInt(document.getElementById('repoPerPage').value);
+                            currentRepoType = 'merged';
+
                             const loading = document.getElementById('repo-loading');
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
+                            const pagination = document.getElementById('repo-pagination');
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
                             results.innerHTML = '';
 
                             try {
-                                const response = await fetch(`/api/repository/${owner}/${repository}/pull-requests/merged`);
+                                const response = await fetch(`/api/repository/${owner}/${repository}/pull-requests/merged?page=${repoCurrentPage}&per_page=${repoCurrentPerPage}`);
                                 
                                 if (!response.ok) {
                                     const errorData = await response.json();
                                     loading.style.display = 'none';
+                                    pagination.style.display = 'none';
                                     showRepoErrorFromResponse(errorData);
                                     return;
                                 }
                                 
                                 const pullRequests = await response.json();
                                 loading.style.display = 'none';
+                                lastRepoItemsCount = pullRequests.length;
                                 
-                                if (pullRequests.length === 0) {
+                                if (pullRequests.length === 0 && repoCurrentPage === 1) {
+                                    pagination.style.display = 'none';
                                     showRepoError('No merged pull requests found for this repository');
                                     return;
                                 }
                                 
+                                if (pullRequests.length === 0 && repoCurrentPage > 1) {
+                                    repoCurrentPage = 1;
+                                    await fetchMergedPullRequests(1);
+                                    return;
+                                }
+                                
                                 displayPullRequests(pullRequests);
+                                updateRepoPagination();
                             } catch (err) {
                                 loading.style.display = 'none';
+                                pagination.style.display = 'none';
                                 showRepoError('Failed to fetch merged pull requests: ' + err.message + '. Make sure the backend is running on localhost:8080');
                             }
                         }
 
-                        async function fetchCommits() {
+                        async function fetchCommits(page = 1) {
                             const owner = document.getElementById('owner').value.trim();
                             const repository = document.getElementById('repository').value.trim();
                             
@@ -498,37 +667,120 @@ public class App {
                                 return;
                             }
 
+                            repoCurrentPage = page;
+                            repoCurrentPerPage = parseInt(document.getElementById('repoPerPage').value);
+                            currentRepoType = 'commits';
+
                             const loading = document.getElementById('repo-loading');
                             const error = document.getElementById('repo-error');
                             const results = document.getElementById('repo-results');
+                            const pagination = document.getElementById('repo-pagination');
 
                             loading.style.display = 'block';
                             error.style.display = 'none';
                             results.innerHTML = '';
 
                             try {
-                                const response = await fetch(`/api/repository/${owner}/${repository}/commits`);
+                                const response = await fetch(`/api/repository/${owner}/${repository}/commits?page=${repoCurrentPage}&per_page=${repoCurrentPerPage}`);
                                 
                                 if (!response.ok) {
                                     const errorData = await response.json();
                                     loading.style.display = 'none';
+                                    pagination.style.display = 'none';
                                     showRepoErrorFromResponse(errorData);
                                     return;
                                 }
                                 
                                 const commits = await response.json();
                                 loading.style.display = 'none';
+                                lastRepoItemsCount = commits.length;
                                 
-                                if (commits.length === 0) {
+                                if (commits.length === 0 && repoCurrentPage === 1) {
+                                    pagination.style.display = 'none';
                                     showRepoError('No commits found for this repository');
                                     return;
                                 }
                                 
+                                if (commits.length === 0 && repoCurrentPage > 1) {
+                                    repoCurrentPage = 1;
+                                    await fetchCommits(1);
+                                    return;
+                                }
+                                
                                 displayCommits(commits);
+                                updateRepoPagination();
                             } catch (err) {
                                 loading.style.display = 'none';
+                                pagination.style.display = 'none';
                                 showRepoError('Failed to fetch commits: ' + err.message + '. Make sure the backend is running on localhost:8080');
                             }
+                        }
+                        
+                        function updateRepoPagination() {
+                            const pagination = document.getElementById('repo-pagination');
+                            const currentPageSpan = document.getElementById('repoCurrentPage');
+                            const prevButton = document.getElementById('repoPrevPage');
+                            const nextButton = document.getElementById('repoNextPage');
+                            
+                            currentPageSpan.textContent = repoCurrentPage;
+                            prevButton.disabled = repoCurrentPage === 1;
+                            nextButton.disabled = lastRepoItemsCount < repoCurrentPerPage;
+                            
+                            if (lastRepoItemsCount > 0 || repoCurrentPage > 1) {
+                                pagination.style.display = 'flex';
+                            } else {
+                                pagination.style.display = 'none';
+                            }
+                        }
+                        
+                        function repoPreviousPage() {
+                            if (repoCurrentPage > 1) {
+                                if (currentRepoType === 'pr') {
+                                    fetchPullRequests(repoCurrentPage - 1);
+                                } else if (currentRepoType === 'merged') {
+                                    fetchMergedPullRequests(repoCurrentPage - 1);
+                                } else if (currentRepoType === 'commits') {
+                                    fetchCommits(repoCurrentPage - 1);
+                                }
+                            }
+                        }
+                        
+                        function repoNextPage() {
+                            if (lastRepoItemsCount >= repoCurrentPerPage) {
+                                if (currentRepoType === 'pr') {
+                                    fetchPullRequests(repoCurrentPage + 1);
+                                } else if (currentRepoType === 'merged') {
+                                    fetchMergedPullRequests(repoCurrentPage + 1);
+                                } else if (currentRepoType === 'commits') {
+                                    fetchCommits(repoCurrentPage + 1);
+                                }
+                            }
+                        }
+                        
+                        function repoChangePerPage() {
+                            repoCurrentPage = 1;
+                            if (currentRepoType === 'pr') {
+                                fetchPullRequests(1);
+                            } else if (currentRepoType === 'merged') {
+                                fetchMergedPullRequests(1);
+                            } else if (currentRepoType === 'commits') {
+                                fetchCommits(1);
+                            }
+                        }
+
+                        function clearRepoResults() {
+                            const results = document.getElementById('repo-results');
+                            const error = document.getElementById('repo-error');
+                            const loading = document.getElementById('repo-loading');
+                            const pagination = document.getElementById('repo-pagination');
+                            
+                            results.innerHTML = '';
+                            error.style.display = 'none';
+                            loading.style.display = 'none';
+                            pagination.style.display = 'none';
+                            repoCurrentPage = 1;
+                            lastRepoItemsCount = 0;
+                            currentRepoType = null;
                         }
 
                         function showRepoError(message) {

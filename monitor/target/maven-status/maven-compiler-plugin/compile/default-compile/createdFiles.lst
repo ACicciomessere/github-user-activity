@@ -1,9 +1,0 @@
-edu\itba\useractivity\api\Handler$UserEventsHandler.class
-edu\itba\useractivity\app\App$RepositoryHandler.class
-edu\itba\useractivity\app\App$RootHandler.class
-edu\itba\useractivity\api\Handler$RepositoryMergedPullRequestsHandler.class
-edu\itba\useractivity\api\Handler$RepositoryPullRequestsHandler.class
-edu\itba\useractivity\app\App.class
-edu\itba\useractivity\api\Handler$RepositoryCommitsHandler.class
-edu\itba\useractivity\api\Router.class
-edu\itba\useractivity\api\Handler.class

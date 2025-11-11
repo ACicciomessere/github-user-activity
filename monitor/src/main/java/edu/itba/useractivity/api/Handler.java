@@ -54,6 +54,7 @@ public class Handler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             String username = path.substring("/api/user/".length());
 
             if (username.isEmpty()) {
@@ -61,9 +62,14 @@ public class Handler {
                 return;
             }
 
+            String url = USER_EVENTS(username);
+            if (query != null && !query.isEmpty()) {
+                url += "?" + query;
+            }
+
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(USER_EVENTS(username)))
+                        .uri(URI.create(url))
                         .GET()
                         .build();
 
@@ -116,6 +122,7 @@ public class Handler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             // Path format: /api/repository/{owner}/{repository}/pull-requests
             String[] parts = path.substring("/api/repository/".length()).split("/");
             
@@ -127,9 +134,14 @@ public class Handler {
             String owner = parts[0];
             String repository = parts[1];
 
+            String url = REPOSITORY_PULL_REQUESTS(owner, repository);
+            if (query != null && !query.isEmpty()) {
+                url += "?" + query;
+            }
+
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(REPOSITORY_PULL_REQUESTS(owner, repository)))
+                        .uri(URI.create(url))
                         .GET()
                         .build();
 
@@ -182,6 +194,7 @@ public class Handler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             // Path format: /api/repository/{owner}/{repository}/pull-requests/merged
             String[] parts = path.substring("/api/repository/".length()).split("/");
             
@@ -193,9 +206,14 @@ public class Handler {
             String owner = parts[0];
             String repository = parts[1];
 
+            String url = REPOSITORY_MERGED_PULL_REQUESTS(owner, repository);
+            if (query != null && !query.isEmpty()) {
+                url += "?" + query;
+            }
+
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(REPOSITORY_MERGED_PULL_REQUESTS(owner, repository)))
+                        .uri(URI.create(url))
                         .GET()
                         .build();
 
@@ -248,6 +266,7 @@ public class Handler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             // Path format: /api/repository/{owner}/{repository}/commits
             String[] parts = path.substring("/api/repository/".length()).split("/");
             
@@ -259,9 +278,14 @@ public class Handler {
             String owner = parts[0];
             String repository = parts[1];
 
+            String url = REPOSITORY_COMMITS(owner, repository);
+            if (query != null && !query.isEmpty()) {
+                url += "?" + query;
+            }
+
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(REPOSITORY_COMMITS(owner, repository)))
+                        .uri(URI.create(url))
                         .GET()
                         .build();
 
