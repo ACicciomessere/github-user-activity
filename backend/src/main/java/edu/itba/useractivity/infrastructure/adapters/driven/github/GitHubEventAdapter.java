@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.itba.useractivity.domain.models.Event;
 import edu.itba.useractivity.domain.ports.outbound.EventOutboundPort;
-import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ExternalServiceException;
-import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
-import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.RateLimitExceededException;
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.*;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -15,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class GitHubEventAdapter implements EventOutboundPort {
@@ -43,15 +42,27 @@ public class GitHubEventAdapter implements EventOutboundPort {
 
             int status = response.statusCode();
 
-            switch (status) {
-                case 200 -> {
-                    JsonNode rootNode = objectMapper.readTree(response.body());
-                    return mapper.mapToEvents(rootNode);
-                }
-                case 404 -> throw new ResourceNotFoundException("User '" + username + "' not found on GitHub");
-                case 403 -> throw new RateLimitExceededException("GitHub API rate limit exceeded");
-                default -> throw new ExternalServiceException("GitHub API returned unexpected status: " + status);
+            if (status == 200) {
+                JsonNode rootNode = objectMapper.readTree(response.body());
+                return mapper.mapToEvents(rootNode);
             }
+
+            Optional<ApiErrorCode> errorCode = ApiErrorCode.fromStatusCode(status);
+
+            if (errorCode.isPresent()) {
+                switch (errorCode.get()) {
+                    case NOT_FOUND -> throw new ResourceNotFoundException("User '" + username + "' not found on GitHub");
+                    case FORBIDDEN -> throw new RateLimitExceededException("GitHub API rate limit exceeded (status " + status + ")");
+                    case UNAUTHORIZED, BAD_REQUEST, UNPROCESSABLE_ENTITY ->
+                            throw new GitHubClientException(status, "GitHub API client error: " + errorCode.get());
+                }
+            }
+
+            if (ApiErrorCode.isServerError(status)) {
+                throw new GitHubServerException(status, "GitHub API server error: " + status);
+            }
+
+            throw new GitHubApiException(status, "Unhandled GitHub API status: " + status);
 
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
