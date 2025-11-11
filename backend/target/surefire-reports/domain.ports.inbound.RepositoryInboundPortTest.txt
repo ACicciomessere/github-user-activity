@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: domain.ports.inbound.RepositoryInboundPortTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.849 s -- in domain.ports.inbound.RepositoryInboundPortTest
