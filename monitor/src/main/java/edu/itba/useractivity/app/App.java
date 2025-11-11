@@ -38,6 +38,7 @@ public class App {
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>GitHub User Activity Monitor</title>
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
                     <style>
                         * {
                             margin: 0;
@@ -340,6 +341,24 @@ public class App {
                             color: white;
                             font-size: 12px;
                             font-weight: bold;
+                        }
+                        .life-avg-chart-container {
+                            background: white;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                            margin-bottom: 20px;
+                        }
+                        .life-avg-chart-container h3 {
+                            margin-bottom: 20px;
+                            color: #333;
+                            font-size: 1.3em;
+                            text-align: center;
+                        }
+                        .life-avg-chart-wrapper {
+                            position: relative;
+                            height: 400px;
+                            width: 100%;
                         }
                     </style>
                 </head>
@@ -998,64 +1017,201 @@ public class App {
 
                         function displayPullRequestsLifeAvg(lifeAvgData) {
                             const results = document.getElementById('repo-results');
+                            results.innerHTML = '';
                             
-                            lifeAvgData.forEach(item => {
-                                const card = document.createElement('div');
-                                card.className = 'life-avg-card';
+                            if (!lifeAvgData || lifeAvgData.length === 0) {
+                                return;
+                            }
+                            
+                            // Ordenar datos por mes para asegurar orden cronológico
+                            const sortedData = [...lifeAvgData].sort((a, b) => {
+                                if (a.month < b.month) return -1;
+                                if (a.month > b.month) return 1;
+                                return 0;
+                            });
+                            
+                            // Convertir duraciones ISO-8601 a horas para el gráfico
+                            const parseDuration = (durationStr) => {
+                                if (!durationStr) return 0;
                                 
-                                // Convertir Duration (ISO-8601) a horas y minutos legibles
-                                let hours = 0;
-                                let minutes = 0;
-                                let seconds = 0;
+                                const str = String(durationStr);
+                                let totalHours = 0;
                                 
-                                if (item.hours) {
-                                    // El formato viene como "PT72H30M15S" o similar (ISO-8601 Duration)
-                                    const durationStr = String(item.hours);
-                                    const hoursMatch = durationStr.match(/(\\d+)H/);
-                                    const minutesMatch = durationStr.match(/(\\d+)M/);
-                                    const secondsMatch = durationStr.match(/(\\d+)S/);
-                                    
-                                    hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
-                                    minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-                                    seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+                                // Capturar horas (formato: PT56H o 56H)
+                                const hoursMatch = str.match(/(\\d+)H/);
+                                if (hoursMatch) {
+                                    totalHours += parseInt(hoursMatch[1], 10);
                                 }
                                 
-                                const totalHours = hours + (minutes / 60) + (seconds / 3600);
-                                let formattedTime = '';
-                                let detailedTime = '';
-                                
-                                if (totalHours >= 24) {
-                                    const days = Math.floor(totalHours / 24);
-                                    const remainingHours = Math.floor(totalHours % 24);
-                                    formattedTime = `${days} día${days > 1 ? 's' : ''} ${remainingHours} hora${remainingHours !== 1 ? 's' : ''}`;
-                                    detailedTime = `${days}d ${remainingHours}h ${minutes}m`;
-                                } else if (totalHours >= 1) {
-                                    formattedTime = `${totalHours.toFixed(2)} horas`;
-                                    detailedTime = `${hours}h ${minutes}m ${seconds}s`;
-                                } else if (minutes > 0) {
-                                    formattedTime = `${(minutes + seconds / 60).toFixed(2)} minutos`;
-                                    detailedTime = `${minutes}m ${seconds}s`;
-                                } else {
-                                    formattedTime = `${seconds} segundos`;
-                                    detailedTime = `${seconds}s`;
+                                // Capturar minutos (formato: 1M, debe estar entre H y S o al final antes de S)
+                                // Buscar M que no sea seguido inmediatamente por S (para distinguir de MS)
+                                const minutesMatch = str.match(/(\\d+)M(?!S)/);
+                                if (minutesMatch) {
+                                    totalHours += parseInt(minutesMatch[1], 10) / 60;
                                 }
                                 
-                                card.innerHTML = `
-                                    <div class="pr-header">
-                                        <div>
-                                            <span class="pr-number">📅 ${item.month || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                    <div class="event-body">
-                                        <strong>Promedio de vida: ${formattedTime}</strong>
-                                    </div>
-                                    <div class="event-details">
-                                        📊 Total de PRs cerrados: ${item.count || 0}
-                                        ${detailedTime ? `<br>⏱️ ${detailedTime}` : ''}
-                                    </div>
-                                `;
+                                // Capturar segundos (pueden tener decimales, formato: 34.956521739S)
+                                const secondsMatch = str.match(/(\\d+(?:\\.\\d+)?)S/);
+                                if (secondsMatch) {
+                                    totalHours += parseFloat(secondsMatch[1]) / 3600;
+                                }
                                 
-                                results.appendChild(card);
+                                return totalHours;
+                            };
+                            
+                            // Preparar datos para el gráfico
+                            const labels = sortedData.map(item => {
+                                // Formatear mes de "YYYY-MM" a "MMM YYYY" (ej: "2024-01" -> "Ene 2024")
+                                const [year, month] = item.month.split('-');
+                                const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
+                                                   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                const monthIndex = parseInt(month) - 1;
+                                return `${monthNames[monthIndex]} ${year}`;
+                            });
+                            
+                            const hoursData = sortedData.map(item => {
+                                const totalHours = parseDuration(item.hours);
+                                return parseFloat(totalHours.toFixed(2));
+                            });
+                            
+                            const counts = sortedData.map(item => item.count || 0);
+                            
+                            // Crear contenedor del gráfico
+                            const chartContainer = document.createElement('div');
+                            chartContainer.className = 'life-avg-chart-container';
+                            
+                            chartContainer.innerHTML = `
+                                <h3>📊 Promedio de Vida de Pull Requests a lo Largo del Tiempo</h3>
+                                <div class="life-avg-chart-wrapper">
+                                    <canvas id="lifeAvgChart"></canvas>
+                                </div>
+                            `;
+                            
+                            results.appendChild(chartContainer);
+                            
+                            // Crear el gráfico de barras
+                            const ctx = document.getElementById('lifeAvgChart').getContext('2d');
+                            
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        label: 'Promedio de Vida (horas)',
+                                        data: hoursData,
+                                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                                        borderColor: 'rgba(102, 126, 234, 1)',
+                                        borderWidth: 2,
+                                        borderRadius: 8,
+                                        borderSkipped: false,
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            display: true,
+                                            position: 'top',
+                                            labels: {
+                                                font: {
+                                                    size: 14,
+                                                    weight: 'bold'
+                                                },
+                                                color: '#333'
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const hours = context.parsed.y;
+                                                    const index = context.dataIndex;
+                                                    const count = counts[index];
+                                                    
+                                                    let formattedTime = '';
+                                                    if (hours >= 24) {
+                                                        const days = Math.floor(hours / 24);
+                                                        const remainingHours = Math.floor(hours % 24);
+                                                        formattedTime = `${days}d ${remainingHours}h`;
+                                                    } else {
+                                                        formattedTime = `${hours.toFixed(2)}h`;
+                                                    }
+                                                    
+                                                    return [
+                                                        `Promedio: ${formattedTime}`,
+                                                        `PRs cerrados: ${count}`
+                                                    ];
+                                                }
+                                            },
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            titleFont: {
+                                                size: 14,
+                                                weight: 'bold'
+                                            },
+                                            bodyFont: {
+                                                size: 13
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            title: {
+                                                display: true,
+                                                text: 'Promedio de Vida (horas)',
+                                                font: {
+                                                    size: 14,
+                                                    weight: 'bold'
+                                                },
+                                                color: '#333'
+                                            },
+                                            ticks: {
+                                                font: {
+                                                    size: 12
+                                                },
+                                                color: '#666',
+                                                callback: function(value) {
+                                                    if (value >= 24) {
+                                                        const days = Math.floor(value / 24);
+                                                        const hours = Math.floor(value % 24);
+                                                        return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+                                                    }
+                                                    return value + 'h';
+                                                }
+                                            },
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.1)'
+                                            }
+                                        },
+                                        x: {
+                                            title: {
+                                                display: true,
+                                                text: 'Mes',
+                                                font: {
+                                                    size: 14,
+                                                    weight: 'bold'
+                                                },
+                                                color: '#333'
+                                            },
+                                            ticks: {
+                                                font: {
+                                                    size: 12
+                                                },
+                                                color: '#666',
+                                                maxRotation: 45,
+                                                minRotation: 45
+                                            },
+                                            grid: {
+                                                display: false
+                                            }
+                                        }
+                                    },
+                                    animation: {
+                                        duration: 1000,
+                                        easing: 'easeInOutQuart'
+                                    }
+                                }
                             });
                         }
                     </script>
