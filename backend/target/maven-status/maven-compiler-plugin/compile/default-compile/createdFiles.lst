@@ -1,0 +1,15 @@
+edu\itba\useractivity\domain\models\PullRequest.class
+edu\itba\useractivity\domain\models\PushEvent.class
+edu\itba\useractivity\domain\models\Repository.class
+edu\itba\useractivity\application\GetUserEventsUseCase.class
+edu\itba\useractivity\domain\models\Commit.class
+edu\itba\useractivity\domain\models\CreateEvent.class
+edu\itba\useractivity\infrastructure\adapters\driven\github\GitHubEventAdapter.class
+edu\itba\useractivity\domain\models\Event.class
+edu\itba\useractivity\domain\models\User.class
+edu\itba\useractivity\domain\models\ForkEvent.class
+edu\itba\useractivity\domain\models\PullRequestAction.class
+edu\itba\useractivity\domain\models\EventType.class
+edu\itba\useractivity\App.class
+edu\itba\useractivity\infrastructure\adapters\driving\EventController.class
+edu\itba\useractivity\domain\models\PullRequestEvent.class

@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+Test set: infraestructure.adapters.driven.github.GitHubEventAdapterTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 1.802 s <<< FAILURE! - in infraestructure.adapters.driven.github.GitHubEventAdapterTest
+infraestructure.adapters.driven.github.GitHubEventAdapterTest.getEventsByUser_ok  Time elapsed: 0.711 s  <<< FAILURE!
+java.lang.AssertionError: 
+
+Expected size: 1 but was: 0 in:
+[]
+	at infraestructure.adapters.driven.github.GitHubEventAdapterTest.getEventsByUser_ok(GitHubEventAdapterTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

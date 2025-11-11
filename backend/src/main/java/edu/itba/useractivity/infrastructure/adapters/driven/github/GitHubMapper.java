@@ -96,7 +96,7 @@ public class GitHubMapper {
         };
     }
 
-    private PushEvent mapToPushEvent(JsonNode node) {
+    public PushEvent mapToPushEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         List<Commit> commits = StreamSupport.stream(payload.path("commits").spliterator(), false)
                 .map(this::mapToCommit)
@@ -128,7 +128,7 @@ public class GitHubMapper {
                 .build();
     }
 
-    private ForkEvent mapToForkEvent(JsonNode node) {
+    public ForkEvent mapToForkEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         return ForkEvent.builder()
                 .id(node.path("id").asText())
@@ -140,7 +140,7 @@ public class GitHubMapper {
                 .build();
     }
 
-    private CreateEvent mapToCreateEvent(JsonNode node) {
+    public CreateEvent mapToCreateEvent(JsonNode node) {
         JsonNode payload = node.path("payload");
         return CreateEvent.builder()
                 .id(node.path("id").asText())
@@ -155,4 +155,3 @@ public class GitHubMapper {
                 .build();
     }
 }
-
