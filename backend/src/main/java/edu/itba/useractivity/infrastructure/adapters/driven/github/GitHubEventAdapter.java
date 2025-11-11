@@ -3,7 +3,7 @@ package edu.itba.useractivity.infrastructure.adapters.driven.github;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.itba.useractivity.domain.models.Event;
-import edu.itba.useractivity.domain.ports.outbound.EventDataPort;
+import edu.itba.useractivity.domain.ports.outbound.EventOutboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.*;
 import org.springframework.stereotype.Component;
 
@@ -13,10 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Optional; // <-- Importado
+import java.util.Optional;
 
 @Component
-public class GitHubEventAdapter implements EventDataPort {
+public class GitHubEventAdapter implements EventOutboundPort {
 
     private final GitHubMapper mapper;
     private final ObjectMapper objectMapper;
@@ -47,7 +47,7 @@ public class GitHubEventAdapter implements EventDataPort {
                 return mapper.mapToEvents(rootNode);
             }
 
-            Optional<GitHubApiErrorCode> errorCode = GitHubApiErrorCode.fromStatusCode(status);
+            Optional<ApiErrorCode> errorCode = ApiErrorCode.fromStatusCode(status);
 
             if (errorCode.isPresent()) {
                 switch (errorCode.get()) {
@@ -58,7 +58,7 @@ public class GitHubEventAdapter implements EventDataPort {
                 }
             }
 
-            if (GitHubApiErrorCode.isServerError(status)) {
+            if (ApiErrorCode.isServerError(status)) {
                 throw new GitHubServerException(status, "GitHub API server error: " + status);
             }
 

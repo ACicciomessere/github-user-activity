@@ -1,7 +1,7 @@
 package edu.itba.useractivity.infrastructure.adapters.driving.exceptions;
 
-import edu.itba.useractivity.domain.models.exceptions.InvalidEventTypeException;
-import edu.itba.useractivity.domain.models.exceptions.InvalidPullRequestActionException;
+import edu.itba.useractivity.domain.exceptions.InvalidEventTypeException;
+import edu.itba.useractivity.domain.exceptions.InvalidPullRequestActionException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

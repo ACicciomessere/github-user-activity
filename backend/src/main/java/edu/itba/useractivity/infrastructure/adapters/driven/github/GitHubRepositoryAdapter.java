@@ -8,7 +8,7 @@ import edu.itba.useractivity.domain.ports.outbound.RepositoryOutboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubClientException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubServerException;
 import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ResourceNotFoundException;
-import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.GitHubApiErrorCode; // <-- Importado
+import edu.itba.useractivity.infrastructure.adapters.driven.github.exceptions.ApiErrorCode; // <-- Importado
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -17,7 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Optional; // <-- Importado
+import java.util.Optional;
 
 @Component
 public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
@@ -37,7 +37,7 @@ public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
             return;
         }
 
-        Optional<GitHubApiErrorCode> errorCode = GitHubApiErrorCode.fromStatusCode(statusCode);
+        Optional<ApiErrorCode> errorCode = ApiErrorCode.fromStatusCode(statusCode);
 
         if (errorCode.isPresent()) {
             switch (errorCode.get()) {
@@ -46,7 +46,7 @@ public class GitHubRepositoryAdapter implements RepositoryOutboundPort {
                 case FORBIDDEN, UNAUTHORIZED, BAD_REQUEST, UNPROCESSABLE_ENTITY ->
                         throw new GitHubClientException(statusCode, "Client error when fetching " + resourceType.toLowerCase() + " for " + resource);
             }
-        } else if (GitHubApiErrorCode.isServerError(statusCode)) {
+        } else if (ApiErrorCode.isServerError(statusCode)) {
             throw new GitHubServerException(statusCode, "GitHub server error while fetching " + resourceType.toLowerCase() + " for " + resource);
         }
 
