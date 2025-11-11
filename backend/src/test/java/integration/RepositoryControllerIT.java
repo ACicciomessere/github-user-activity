@@ -1,6 +1,7 @@
 package integration;
 
 import edu.itba.useractivity.domain.models.Commit;
+import edu.itba.useractivity.domain.models.CommitsResponse;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
 import edu.itba.useractivity.infrastructure.adapters.driving.RepositoryController;
 import org.junit.jupiter.api.DisplayName;
@@ -65,7 +66,10 @@ class RepositoryControllerIT {
                 "https://commit/sha-1"
         );
         Mockito.when(repositoryInboundPort.getCommits(eq("itba"), eq("repo"), eq(1), eq(30)))
-                .thenReturn(List.of(c));
+                .thenReturn(new CommitsResponse(
+                        List.of(c),
+                        List.of()
+                ));
 
         mvc.perform(get("/repository/itba/repo/commits"))
                 .andExpect(status().isOk())

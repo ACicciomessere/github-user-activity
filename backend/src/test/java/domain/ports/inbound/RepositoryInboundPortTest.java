@@ -1,8 +1,6 @@
 package domain.ports.inbound;
 
-import edu.itba.useractivity.domain.models.Commit;
-import edu.itba.useractivity.domain.models.PullRequest;
-import edu.itba.useractivity.domain.models.PullRequestsLifeAvg;
+import edu.itba.useractivity.domain.models.*;
 import edu.itba.useractivity.domain.ports.inbound.RepositoryInboundPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,8 +35,11 @@ class RepositoryInboundPortTest {
             }
 
             @Override
-            public List<Commit> getCommits(String owner, String repo, int page, int perPage) {
-                return List.of(c1, c2);
+            public CommitsResponse getCommits(String owner, String repo, int page, int perPage) {
+                return new CommitsResponse(
+                        List.of(c1, c2),
+                        List.of()
+                );
             }
 
             @Override
@@ -50,7 +51,9 @@ class RepositoryInboundPortTest {
         // act
         List<PullRequest> prs = port.getPullRequests("owner", "repo", 1, 10);
         List<PullRequest> merged = port.getMergedPullRequests("owner", "repo", 1, 10);
-        List<Commit> commits = port.getCommits("owner", "repo", 1, 10);
+        CommitsResponse response = port.getCommits("owner", "repo", 1, 10);
+        List<Commit> commits = response.commits();
+        List<UserParticipation> participations = response.userParticipations();
         List<PullRequestsLifeAvg> life = port.getPullRequestsLifeAvg("owner", "repo");
 
         // assert
@@ -58,5 +61,6 @@ class RepositoryInboundPortTest {
         assertThat(merged).containsExactly(prMerged);
         assertThat(commits).containsExactly(c1, c2);
         assertThat(life).containsExactly(avg);
+        assertThat(participations).isEmpty();
     }
 }

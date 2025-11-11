@@ -137,29 +137,4 @@ class RepositoryControllerTest {
         verify(port).getPullRequestsLifeAvg(eq(owner), eq(repo));
         verifyNoMoreInteractions(port);
     }
-
-    @Test
-    @DisplayName("@ModelAttribute + GET /pull-requests/life-avg delega a getPullRequestsLifeAvg")
-    void getPullRequestsLifeAvg_ok() {
-        RepositoryInboundPort port = mock(RepositoryInboundPort.class);
-        RepositoryController controller = new RepositoryController(port);
-
-        String owner = "itba";
-        String repo = "ua";
-
-        List<PullRequestsLifeAvg> expected = List.of(
-                new PullRequestsLifeAvg("2025-01", Duration.ofHours(12), 3),
-                new PullRequestsLifeAvg("2025-02", Duration.ofHours(8), 2)
-        );
-
-        controller.setRepositoryContext(owner, repo);
-        when(port.getPullRequestsLifeAvg(owner, repo)).thenReturn(expected);
-
-        var response = controller.getPullRequestsLifeAvg();
-
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).isSameAs(expected);
-        verify(port).getPullRequestsLifeAvg(eq(owner), eq(repo));
-        verifyNoMoreInteractions(port);
-    }
 }
