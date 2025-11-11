@@ -578,11 +578,11 @@ public class App {
                                         <span class="event-date">${date}</span>
                                     </div>
                                     <div class="event-body">
-                                        <span class="event-actor">${event.actor.username}</span>
+                                        <span class="event-actor">${event.user?.username || 'Unknown'}</span>
                                         performed 
                                         <span class="event-actor">${event.type}</span>
                                         on
-                                        <span class="event-repo">${event.repo.name}</span>
+                                        <span class="event-repo">${event.repo?.name || 'Unknown'}</span>
                                     </div>
                                     ${details}
                                 `;
