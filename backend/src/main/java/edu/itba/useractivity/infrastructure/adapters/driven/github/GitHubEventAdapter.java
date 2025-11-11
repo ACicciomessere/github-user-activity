@@ -52,7 +52,7 @@ public class GitHubEventAdapter implements EventOutboundPort {
             if (errorCode.isPresent()) {
                 switch (errorCode.get()) {
                     case NOT_FOUND -> throw new ResourceNotFoundException("User '" + username + "' not found on GitHub");
-                    case FORBIDDEN -> throw new RateLimitExceededException("GitHub API rate limit exceeded (status " + status + ")");
+                    case FORBIDDEN -> throw new RateLimitExceededException("GitHub API rate limit exceeded");
                     case UNAUTHORIZED, BAD_REQUEST, UNPROCESSABLE_ENTITY ->
                             throw new GitHubClientException(status, "GitHub API client error: " + errorCode.get());
                 }
