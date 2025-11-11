@@ -40,4 +40,20 @@ class GetRepositoryCommitsUseCaseTest {
         verify(repoPort).getCommits(eq(owner), eq(repository), eq(page), eq(perPage));
         verifyNoMoreInteractions(repoPort);
     }
+
+    @Test
+    @DisplayName("execute devuelve null si repositoryDataPort devuelve null")
+    void execute_nullReturn() {
+        RepositoryOutboundPort repoPort = mock(RepositoryOutboundPort.class);
+        GetRepositoryCommitsUseCase useCase = new GetRepositoryCommitsUseCase(repoPort);
+
+        when(repoPort.getCommits(any(), any(), anyInt(), anyInt())).thenReturn(null);
+
+        var result = useCase.execute("a", "b", 1, 10);
+
+        assertThat(result).isNull();
+        verify(repoPort).getCommits("a", "b", 1, 10);
+        verifyNoMoreInteractions(repoPort);
+    }
+
 }

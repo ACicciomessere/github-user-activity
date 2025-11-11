@@ -244,4 +244,98 @@ class GitHubRepositoryAdapterTest {
                     .hasMessageContaining("Failed to fetch pullRequests from GitHub"); // mismo mensaje en catch
         }
     }
+
+    @Test
+    @DisplayName("getPullRequests InterruptedException: RuntimeException")
+    void getPullRequests_interruptedException() throws Exception {
+        HttpClient http = mock(HttpClient.class);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new InterruptedException("int"));
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubRepositoryAdapter adapter = new GitHubRepositoryAdapter();
+            assertThatThrownBy(() -> adapter.getPullRequests("owner", "repo", 1, 10))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Failed to fetch pullRequests from GitHub");
+        }
+    }
+
+    @Test
+    @DisplayName("getCommits IOException: RuntimeException")
+    void getCommits_ioException() throws Exception {
+        HttpClient http = mock(HttpClient.class);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new IOException("boom"));
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubRepositoryAdapter adapter = new GitHubRepositoryAdapter();
+            assertThatThrownBy(() -> adapter.getCommits("owner", "repo", 1, 10))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Failed to fetch pullRequests from GitHub");
+        }
+    }
+
+    @Test
+    @DisplayName("getPullRequests 403 Forbidden: GitHubClientException (label FORBIDDEN)")
+    void getPullRequests_403_forbidden() throws Exception {
+        HttpClient http = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> resp = (HttpResponse<String>) mock(HttpResponse.class);
+
+        when(resp.statusCode()).thenReturn(403);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubRepositoryAdapter adapter = new GitHubRepositoryAdapter();
+            assertThatThrownBy(() -> adapter.getPullRequests("owner", "repo", 1, 10))
+                    .isInstanceOf(GitHubClientException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("getCommits 422 Unprocessable Entity: GitHubClientException (label UNPROCESSABLE_ENTITY)")
+    void getCommits_422_unprocessableEntity() throws Exception {
+        HttpClient http = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> resp = (HttpResponse<String>) mock(HttpResponse.class);
+
+        when(resp.statusCode()).thenReturn(422);
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubRepositoryAdapter adapter = new GitHubRepositoryAdapter();
+            assertThatThrownBy(() -> adapter.getCommits("owner", "repo", 1, 10))
+                    .isInstanceOf(GitHubClientException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("getPullRequests estado 4xx no mapeado (418): GitHubClientException con mensaje 'Unhandled status code'")
+    void getPullRequests_unhandled418() throws Exception {
+        HttpClient http = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> resp = (HttpResponse<String>) mock(HttpResponse.class);
+
+        when(resp.statusCode()).thenReturn(418); // no mapeado y no es 5xx
+        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(resp);
+
+        try (MockedStatic<HttpClient> mocked = Mockito.mockStatic(HttpClient.class)) {
+            mocked.when(HttpClient::newHttpClient).thenReturn(http);
+
+            GitHubRepositoryAdapter adapter = new GitHubRepositoryAdapter();
+            assertThatThrownBy(() -> adapter.getPullRequests("owner", "repo", 1, 10))
+                    .isInstanceOf(GitHubClientException.class)
+                    .hasMessageContaining("Unhandled status code");
+        }
+    }
+
+
 }

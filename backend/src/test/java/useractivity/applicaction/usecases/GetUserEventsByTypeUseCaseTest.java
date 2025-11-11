@@ -65,4 +65,42 @@ class GetUserEventsByTypeUseCaseTest {
         verify(getUserEventsUseCase).execute(eq(username), eq(page), eq(perPage));
         verifyNoMoreInteractions(getUserEventsUseCase);
     }
+
+    @Test
+    @DisplayName("execute con lista vacía devuelve vacío (stream sobre vacío)")
+    void execute_emptyInput_returnsEmpty() {
+        GetUserEventsUseCase getUserEventsUseCase = mock(GetUserEventsUseCase.class);
+        GetUserEventsByTypeUseCase useCase = new GetUserEventsByTypeUseCase(getUserEventsUseCase);
+
+        String username = "u";
+        int page = 1, perPage = 10;
+
+        when(getUserEventsUseCase.execute(username, page, perPage)).thenReturn(List.of());
+
+        List<Event> result = useCase.execute(EventType.PUSH, username, page, perPage);
+
+        assertThat(result).isEmpty();
+        verify(getUserEventsUseCase).execute(username, page, perPage);
+        verifyNoMoreInteractions(getUserEventsUseCase);
+    }
+
+    @Test
+    @DisplayName("execute con eventType nulo lanza NullPointerException")
+    void execute_nullEventType_throws() {
+        GetUserEventsUseCase getUserEventsUseCase = mock(GetUserEventsUseCase.class);
+        GetUserEventsByTypeUseCase useCase = new GetUserEventsByTypeUseCase(getUserEventsUseCase);
+
+        when(getUserEventsUseCase.execute(anyString(), anyInt(), anyInt()))
+                .thenReturn(List.of(mock(Event.class)));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> useCase.execute(null, "u", 1, 10)
+        ).isInstanceOf(NullPointerException.class);
+
+        verify(getUserEventsUseCase).execute("u", 1, 10);
+        verifyNoMoreInteractions(getUserEventsUseCase);
+    }
+
+
+
 }
